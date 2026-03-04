@@ -55,7 +55,7 @@ const outlinePaint: LineLayerSpecification["paint"] = {
   "line-width": [
     "case",
     ["boolean", ["feature-state", "hover"], false],
-    2,
+    2.5,
     1,
   ],
 };
