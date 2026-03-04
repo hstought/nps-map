@@ -44,4 +44,4 @@ next-env.d.ts
 nps_boundary.geojson
 
 # planning notes (local only)
-/docs/planning/
+/docs/planning/package-lock.json
