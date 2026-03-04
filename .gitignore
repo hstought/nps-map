@@ -42,3 +42,6 @@ next-env.d.ts
 
 # nps large files
 nps_boundary.geojson
+
+# local notes / scratch documents (not for version control)
+notes/
