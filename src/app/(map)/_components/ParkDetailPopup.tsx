@@ -9,11 +9,18 @@ interface ParkDetailPopupProps {
   onClose: () => void;
 }
 
+const DESCRIPTION_TRUNCATE_LENGTH = 180;
+
 export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
   const [detail, setDetail] = useState<ParkDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  useEffect(() => {
+    setIsDescriptionExpanded(false);
+  }, [unitCode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,9 +74,12 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
   }
 
   const heroImage = detail.images?.[0];
-  const truncatedDescription = detail.description
-    ? detail.description.length > 180
-      ? detail.description.slice(0, 180).trim() + "…"
+  const descriptionIsTruncatable =
+    detail.description !== undefined &&
+    detail.description.length > DESCRIPTION_TRUNCATE_LENGTH;
+  const displayedDescription = detail.description
+    ? descriptionIsTruncatable && !isDescriptionExpanded
+      ? detail.description.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trim() + "…"
       : detail.description
     : null;
 
@@ -119,10 +129,21 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
         </div>
 
         {/* Description */}
-        {truncatedDescription && (
-          <p className="text-sm leading-relaxed text-gray-600">
-            {truncatedDescription}
-          </p>
+        {displayedDescription && (
+          <div className="flex flex-col gap-1">
+            <p className="text-sm leading-relaxed text-gray-600">
+              {displayedDescription}
+            </p>
+            {descriptionIsTruncatable && (
+              <button
+                onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+                aria-label={isDescriptionExpanded ? "Collapse park description" : "Expand park description"}
+                className="self-start text-xs font-medium text-green-700 hover:text-green-900 transition-colors"
+              >
+                {isDescriptionExpanded ? "See less" : "See more"}
+              </button>
+            )}
+          </div>
         )}
 
         {/* Footer */}
