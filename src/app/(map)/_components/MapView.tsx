@@ -50,13 +50,13 @@ const outlinePaint: LineLayerSpecification["paint"] = {
     "case",
     ["boolean", ["feature-state", "hover"], false],
     "#ffffff",
-    "rgba(0,0,0,0.3)",
+    "rgba(0,0,0,0.6)",
   ],
   "line-width": [
     "case",
     ["boolean", ["feature-state", "hover"], false],
-    2,
-    0.5,
+    2.5,
+    1,
   ],
 };
 
@@ -217,6 +217,8 @@ export function MapView() {
             type="geojson"
             data={dataWithIds}
             promoteId="unitCode"
+            tolerance={0.375}
+            buffer={256}
           >
             <Layer
               id="park-fill"

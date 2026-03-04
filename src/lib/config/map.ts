@@ -41,12 +41,14 @@ export function getStyleUrl(styleKey: MapStyleKey): string | null {
 /**
  * Returns the simplification tolerance for a given zoom level.
  * Lower zoom = more simplification to reduce payload size.
+ * Uses ST_SimplifyPreserveTopology-safe values — tighter than the old
+ * ST_Simplify tolerances to keep more boundary detail at every zoom level.
  */
 export function getSimplificationTolerance(zoom: number): number {
-  if (zoom <= 4) return 0.05;
-  if (zoom <= 7) return 0.01;
-  if (zoom <= 10) return 0.005;
-  if (zoom <= 13) return 0.001;
+  if (zoom <= 4) return 0.01;
+  if (zoom <= 7) return 0.005;
+  if (zoom <= 10) return 0.001;
+  if (zoom <= 13) return 0.0005;
   return 0.0001;
 }
 

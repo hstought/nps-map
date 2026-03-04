@@ -42,3 +42,12 @@ next-env.d.ts
 
 # nps large files
 nps_boundary.geojson
+
+# local notes / scratch documents (not for version control)
+notes/
+
+# planning notes (local only)
+/docs/planning/
+
+# package lock (not used; project uses pnpm)
+package-lock.json
