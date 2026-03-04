@@ -51,3 +51,6 @@ notes/
 
 # package lock (not used; project uses pnpm)
 package-lock.json
+
+# Planning
+TODO.md
