@@ -24,7 +24,7 @@ export async function getParkBoundaries(
       state,
       region,
       ST_AsGeoJSON(
-        ST_Simplify(boundary, ${tolerance})
+        ST_SimplifyPreserveTopology(boundary, ${tolerance})
       ) AS geojson
     FROM park_boundaries
     WHERE ST_Intersects(
