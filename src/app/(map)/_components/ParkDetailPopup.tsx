@@ -74,13 +74,13 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
   }
 
   const heroImage = detail.images?.[0];
+  const descriptionText = detail.description ?? "";
   const descriptionIsTruncatable =
-    detail.description !== undefined &&
-    detail.description.length > DESCRIPTION_TRUNCATE_LENGTH;
-  const displayedDescription = detail.description
+    descriptionText.length > DESCRIPTION_TRUNCATE_LENGTH;
+  const displayedDescription = descriptionText
     ? descriptionIsTruncatable && !isDescriptionExpanded
-      ? detail.description.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trim() + "…"
-      : detail.description
+      ? descriptionText.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trim() + "…"
+      : descriptionText
     : null;
 
   return (
