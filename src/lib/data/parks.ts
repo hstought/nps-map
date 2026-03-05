@@ -6,7 +6,47 @@ import type { ParkDetail } from "@/types/park";
 import type { NpsApiPark } from "@/lib/data/nps-api";
 
 /**
+ * Run the boundary query with a given simplification function.
+ * Extracted so we can retry with a lighter algorithm on failure.
+ */
+async function queryBoundaries(
+  sql: ReturnType<typeof getDb>,
+  bbox: BBox,
+  tolerance: number,
+  simplifyFn: "ST_SimplifyPreserveTopology" | "ST_Simplify"
+) {
+  // Template literals don't allow dynamic function names, so we branch instead.
+  if (simplifyFn === "ST_SimplifyPreserveTopology") {
+    return sql`
+      SELECT
+        unit_code, unit_name, park_name, unit_type, state, region,
+        ST_AsGeoJSON(ST_SimplifyPreserveTopology(boundary, ${tolerance})) AS geojson
+      FROM park_boundaries
+      WHERE ST_Intersects(
+        boundary,
+        ST_MakeEnvelope(${bbox.west}, ${bbox.south}, ${bbox.east}, ${bbox.north}, 4326)
+      )
+    `;
+  }
+
+  return sql`
+    SELECT
+      unit_code, unit_name, park_name, unit_type, state, region,
+      ST_AsGeoJSON(ST_Simplify(boundary, ${tolerance}, true)) AS geojson
+    FROM park_boundaries
+    WHERE ST_Intersects(
+      boundary,
+      ST_MakeEnvelope(${bbox.west}, ${bbox.south}, ${bbox.east}, ${bbox.north}, 4326)
+    )
+  `;
+}
+
+/**
  * Fetch park boundaries within a bounding box, simplified by zoom level.
+ *
+ * Uses ST_SimplifyPreserveTopology by default. If GEOS runs out of memory
+ * (std::bad_alloc on complex geometries), falls back to the lighter
+ * ST_Simplify which requires less memory at the cost of minor topology gaps.
  */
 export async function getParkBoundaries(
   bbox: BBox,
@@ -15,23 +55,22 @@ export async function getParkBoundaries(
   const sql = getDb();
   const tolerance = getSimplificationTolerance(zoom);
 
-  const rows = await sql`
-    SELECT
-      unit_code,
-      unit_name,
-      park_name,
-      unit_type,
-      state,
-      region,
-      ST_AsGeoJSON(
-        ST_SimplifyPreserveTopology(boundary, ${tolerance})
-      ) AS geojson
-    FROM park_boundaries
-    WHERE ST_Intersects(
-      boundary,
-      ST_MakeEnvelope(${bbox.west}, ${bbox.south}, ${bbox.east}, ${bbox.north}, 4326)
-    )
-  `;
+  let rows;
+  try {
+    rows = await queryBoundaries(sql, bbox, tolerance, "ST_SimplifyPreserveTopology");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    // GEOS memory failure — retry with the lighter simplification algorithm
+    if (message.includes("bad_alloc") || message.includes("TopologyException")) {
+      console.warn(
+        `ST_SimplifyPreserveTopology failed (${message}), falling back to ST_Simplify`
+      );
+      rows = await queryBoundaries(sql, bbox, tolerance, "ST_Simplify");
+    } else {
+      throw error;
+    }
+  }
 
   const features = rows.map((row) => ({
     type: "Feature" as const,
