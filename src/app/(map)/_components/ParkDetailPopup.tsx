@@ -82,6 +82,17 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
       ? descriptionText.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trim() + "…"
       : descriptionText
     : null;
+  const stateAbbreviations = detail.state
+    ? Array.from(
+        new Set(
+          detail.state
+            .split(",")
+            .map((state) => state.trim().toUpperCase())
+            .filter(Boolean)
+        )
+      )
+    : [];
+  const formattedStates = stateAbbreviations.join(", ");
 
   return (
     <div className="flex w-80 flex-col overflow-hidden">
@@ -123,8 +134,8 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
               {detail.designation}
             </span>
           )}
-          {detail.state && (
-            <span className="text-xs text-gray-500">{detail.state}</span>
+          {formattedStates && (
+            <span className="text-xs text-gray-500">{formattedStates}</span>
           )}
         </div>
 
