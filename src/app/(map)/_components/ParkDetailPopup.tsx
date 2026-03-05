@@ -136,6 +136,7 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
             </p>
             {descriptionIsTruncatable && (
               <button
+                type="button"
                 onClick={() => setIsDescriptionExpanded((prev) => !prev)}
                 aria-label={isDescriptionExpanded ? "Collapse park description" : "Expand park description"}
                 className="self-start text-xs font-medium text-green-700 hover:text-green-900 transition-colors"
