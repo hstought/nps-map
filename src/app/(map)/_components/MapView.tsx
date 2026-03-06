@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, {
   Source,
   Layer,
@@ -21,6 +21,7 @@ import type { MapStyleKey } from "@/types/map";
 import { getStyleUrl } from "@/lib/config/map";
 import { ParkDetailPopup } from "./ParkDetailPopup";
 import { MapStyleSwitcher } from "./MapStyleSwitcher";
+import { ParkTypeFilter, buildAllEnabledTypes, isTypeEnabled } from "./ParkTypeFilter";
 
 // Build the MapLibre match expression for fill-color based on unit type.
 // Cast justified: the dynamic spread from UNIT_TYPE_COLORS produces string[]
@@ -74,6 +75,7 @@ export function MapView() {
   const [hoveredFeatureId, setHoveredFeatureId] = useState<string | null>(null);
   const [currentStyle, setCurrentStyle] = useState<MapStyleKey>("liberty");
   const [isLoading, setIsLoading] = useState(false);
+  const [enabledTypes, setEnabledTypes] = useState<Set<string>>(buildAllEnabledTypes);
   const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch park boundaries based on the current viewport
@@ -196,16 +198,30 @@ export function MapView() {
   // Resolve the current map style URL
   const styleUrl = getStyleUrl(currentStyle) || getStyleUrl("liberty")!;
 
-  // Add feature IDs to GeoJSON for feature-state hover to work
-  const dataWithIds = parkData
-    ? {
-        ...parkData,
-        features: parkData.features.map((f, i) => ({
-          ...f,
-          id: i,
-        })),
+  // Toggle an entire type group on/off
+  const handleToggleGroup = useCallback((types: string[], enabled: boolean) => {
+    setEnabledTypes((prev) => {
+      const next = new Set(prev);
+      for (const t of types) {
+        if (enabled) next.add(t);
+        else next.delete(t);
       }
-    : null;
+      return next;
+    });
+  }, []);
+
+  // Memoize filtered + id-stamped features so the count always reflects the current filter
+  const dataWithIds = useMemo(() => {
+    if (!parkData) return null;
+    return {
+      ...parkData,
+      features: parkData.features
+        .filter((f) => isTypeEnabled(f.properties.unitType, enabledTypes))
+        .map((f, i) => ({ ...f, id: i })),
+    };
+  }, [parkData, enabledTypes]);
+
+  const visibleCount = dataWithIds?.features.length ?? 0;
 
   return (
     <div className="relative h-full w-full">
@@ -220,7 +236,7 @@ export function MapView() {
         onMouseLeave={handleMouseLeave}
         interactiveLayerIds={["park-fill"]}
       >
-        <NavigationControl position="top-left" />
+        <NavigationControl position="bottom-right" />
 
         {dataWithIds && (
           <Source
@@ -261,6 +277,13 @@ export function MapView() {
           </Popup>
         )}
       </Map>
+
+      {/* Park type filter */}
+      <ParkTypeFilter
+        enabledTypes={enabledTypes}
+        onToggleGroup={handleToggleGroup}
+        visibleCount={visibleCount}
+      />
 
       {/* Map style switcher */}
       <MapStyleSwitcher
