@@ -216,12 +216,10 @@ export function MapView() {
     return {
       ...parkData,
       features: parkData.features
-        .filter((f) => isTypeEnabled(f.properties.unitType, enabledTypes))
+        .filter((f) => isTypeEnabled(f.properties.unitType, f.properties.unitName, enabledTypes))
         .map((f, i) => ({ ...f, id: i })),
     };
   }, [parkData, enabledTypes]);
-
-  const visibleCount = dataWithIds?.features.length ?? 0;
 
   return (
     <div className="relative h-full w-full">
@@ -282,7 +280,6 @@ export function MapView() {
       <ParkTypeFilter
         enabledTypes={enabledTypes}
         onToggleGroup={handleToggleGroup}
-        visibleCount={visibleCount}
       />
 
       {/* Map style switcher */}
