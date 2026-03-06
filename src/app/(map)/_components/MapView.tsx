@@ -60,6 +60,9 @@ const outlinePaint: LineLayerSpecification["paint"] = {
   ],
 };
 
+const SELECTED_PARK_FLY_DURATION_MS = 850;
+const POPUP_CARD_CENTER_OFFSET_Y = 170;
+
 export function MapView() {
   const mapRef = useRef<MapRef>(null);
   const [parkData, setParkData] = useState<ParkBoundaryCollection | null>(null);
@@ -130,6 +133,14 @@ export function MapView() {
     }
 
     const props = feature.properties as ParkBoundaryProperties;
+    // Shift the clicked park slightly below center so the popup card sits near center.
+    mapRef.current?.easeTo({
+      center: [event.lngLat.lng, event.lngLat.lat],
+      offset: [0, POPUP_CARD_CENTER_OFFSET_Y],
+      duration: SELECTED_PARK_FLY_DURATION_MS,
+      essential: true,
+    });
+
     setSelectedPark({
       unitCode: props.unitCode,
       longitude: event.lngLat.lng,
