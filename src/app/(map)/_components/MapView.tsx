@@ -216,7 +216,7 @@ export function MapView() {
     return {
       ...parkData,
       features: parkData.features
-        .filter((f) => isTypeEnabled(f.properties.unitType, f.properties.unitName, enabledTypes))
+        .filter((f) => isTypeEnabled(f.properties.unitType, f.properties.unitName, enabledTypes, f.properties.unitCode))
         .map((f, i) => ({ ...f, id: i })),
     };
   }, [parkData, enabledTypes]);

@@ -168,6 +168,22 @@ export function buildAllEnabledTypes(): Set<string> {
 }
 
 /**
+ * The 62 unit codes (uppercase) representing the official 63 National Parks.
+ * Sequoia & Kings Canyon share one NPS record (seki) but have separate
+ * boundary entries (SEQU + KICA), so 62 codes cover all 63 parks.
+ */
+const NATIONAL_PARK_CODES = new Set([
+  "ACAD", "NPSA", "ARCH", "BADL", "BIBE", "BISC", "BLCA", "BRCA",
+  "CANY", "CARE", "CAVE", "CHIS", "CONG", "CRLA", "CUVA", "DEVA",
+  "DENA", "DRTO", "EVER", "GAAR", "JEFF", "GLAC", "GLBA", "GRCA",
+  "GRTE", "GRBA", "GRSA", "GRSM", "GUMO", "HALE", "HAVO", "HOSP",
+  "INDU", "ISRO", "JOTR", "KATM", "KEFJ", "KICA", "KOVA", "LACL",
+  "LAVO", "MACA", "MEVE", "MORA", "NERI", "NOCA", "OLYM", "PEFO",
+  "PINN", "REDW", "ROMO", "SAGU", "SEQU", "SHEN", "THRO", "VIIS",
+  "VOYA", "WHSA", "WICA", "WRST", "YELL", "YOSE", "ZION",
+]);
+
+/**
  * Regex patterns that indicate a park belongs to multiple filter groups.
  * Used to show dual-designation parks (e.g. "National Park and Preserve")
  * when either of their parent groups is enabled.
@@ -183,12 +199,23 @@ const DUAL_DESIGNATION_PATTERNS: { pattern: RegExp; extraTypes: string[] }[] = [
 export function isTypeEnabled(
   unitType: string | null,
   unitName: string | null,
-  enabledTypes: Set<string>
+  enabledTypes: Set<string>,
+  unitCode?: string | null
 ): boolean {
   // Direct match on unitType
   if (unitType && KNOWN_TYPES.has(unitType) && enabledTypes.has(unitType)) return true;
   if (!unitType && enabledTypes.has("__other__")) return true;
   if (unitType && !KNOWN_TYPES.has(unitType) && enabledTypes.has("__other__")) return true;
+
+  // If the National Park filter is on, include all 63 official national parks
+  // regardless of their boundary unit_type (handles parks typed as Preserves etc.)
+  if (
+    unitCode &&
+    NATIONAL_PARK_CODES.has(unitCode.toUpperCase()) &&
+    (enabledTypes.has("National Park") || enabledTypes.has("National Parks"))
+  ) {
+    return true;
+  }
 
   // Check dual-designation by park name
   if (unitName) {
