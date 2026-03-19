@@ -45,7 +45,9 @@ export function getStyleUrl(styleKey: MapStyleKey): string | null {
  * ST_Simplify tolerances to keep more boundary detail at every zoom level.
  */
 export function getSimplificationTolerance(zoom: number): number {
-  if (zoom <= 4) return 0.01;
+  if (zoom <= 3) return 0.05;
+  if (zoom <= 4) return 0.02;
+  if (zoom <= 5) return 0.01;
   if (zoom <= 7) return 0.005;
   if (zoom <= 10) return 0.001;
   if (zoom <= 13) return 0.0005;

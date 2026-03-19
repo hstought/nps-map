@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getParkBoundaries } from "@/lib/data/parks";
+import { getParkBoundaries, isMemoryError } from "@/lib/data/parks";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -44,6 +44,14 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching park boundaries:", error);
+
+    if (isMemoryError(error)) {
+      return NextResponse.json(
+        { error: "Boundary query too large — zoom in or reduce the viewport" },
+        { status: 503, headers: { "Retry-After": "5" } }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to fetch park boundaries" },
       { status: 500 }

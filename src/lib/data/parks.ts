@@ -6,6 +6,25 @@ import type { ParkDetail, ParkSearchResult } from "@/types/park";
 import type { NpsApiPark } from "@/lib/data/nps-api";
 
 /**
+ * Detect whether a Postgres / GEOS error is an out-of-memory failure.
+ * Covers:
+ *  - Postgres error code 53200 (out_of_memory)
+ *  - GEOS std::bad_alloc thrown during geometry operations
+ *  - GEOS TopologyException on overly complex geometries
+ */
+export function isMemoryError(error: unknown): boolean {
+  if (error && typeof error === "object") {
+    const code = (error as Record<string, unknown>).code;
+    if (code === "53200") return true;
+  }
+  const msg = error instanceof Error ? error.message : String(error);
+  return msg.includes("bad_alloc") || msg.includes("out of memory") || msg.includes("TopologyException");
+}
+
+/** Maximum number of park boundaries returned per request. */
+const BOUNDARY_LIMIT = 250;
+
+/**
  * Run the boundary query with a given simplification function.
  * Extracted so we can retry with a lighter algorithm on failure.
  */
@@ -26,6 +45,7 @@ async function queryBoundaries(
         boundary,
         ST_MakeEnvelope(${bbox.west}, ${bbox.south}, ${bbox.east}, ${bbox.north}, 4326)
       )
+      LIMIT ${BOUNDARY_LIMIT}
     `;
   }
 
@@ -38,6 +58,7 @@ async function queryBoundaries(
       boundary,
       ST_MakeEnvelope(${bbox.west}, ${bbox.south}, ${bbox.east}, ${bbox.north}, 4326)
     )
+    LIMIT ${BOUNDARY_LIMIT}
   `;
 }
 
@@ -59,16 +80,23 @@ export async function getParkBoundaries(
   try {
     rows = await queryBoundaries(sql, bbox, tolerance, "ST_SimplifyPreserveTopology");
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    if (!isMemoryError(error)) throw error;
 
-    // GEOS memory failure — retry with the lighter simplification algorithm
-    if (message.includes("bad_alloc") || message.includes("TopologyException")) {
-      console.warn(
-        `ST_SimplifyPreserveTopology failed (${message}), falling back to ST_Simplify`
-      );
+    // Retry 1: lighter algorithm, same tolerance
+    console.warn(
+      "ST_SimplifyPreserveTopology OOM, falling back to ST_Simplify"
+    );
+    try {
       rows = await queryBoundaries(sql, bbox, tolerance, "ST_Simplify");
-    } else {
-      throw error;
+    } catch (retryError) {
+      if (!isMemoryError(retryError)) throw retryError;
+
+      // Retry 2: much more aggressive simplification (5× tolerance)
+      const aggressiveTolerance = tolerance * 5;
+      console.warn(
+        `ST_Simplify OOM at tolerance ${tolerance}, retrying with ${aggressiveTolerance}`
+      );
+      rows = await queryBoundaries(sql, bbox, aggressiveTolerance, "ST_Simplify");
     }
   }
 
