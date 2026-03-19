@@ -58,6 +58,8 @@ export function getSimplificationTolerance(zoom: number): number {
 export const UNIT_TYPE_COLORS: Record<string, string> = {
   "National Park": "#2D6A4F",
   "National Parks": "#2D6A4F",
+  "National Park & Preserve": "#2D6A4F",
+  "National and State Parks": "#2D6A4F",
   "National Monument": "#D4A843",
   "National Monuments": "#D4A843",
   "National Monument & Preserve": "#D4A843",

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UNIT_TYPE_COLORS, DEFAULT_UNIT_COLOR } from "@/lib/config/map";
+import { NATIONAL_PARK_BOUNDARY_CODES } from "@/lib/constants/national-parks";
 
 /**
  * Canonical park-type groups used in the filter UI.
@@ -167,21 +168,7 @@ export function buildAllEnabledTypes(): Set<string> {
   return set;
 }
 
-/**
- * The 62 unit codes (uppercase) representing the official 63 National Parks.
- * Sequoia & Kings Canyon share one NPS record (seki) but have separate
- * boundary entries (SEQU + KICA), so 62 codes cover all 63 parks.
- */
-const NATIONAL_PARK_CODES = new Set([
-  "ACAD", "NPSA", "ARCH", "BADL", "BIBE", "BISC", "BLCA", "BRCA",
-  "CANY", "CARE", "CAVE", "CHIS", "CONG", "CRLA", "CUVA", "DEVA",
-  "DENA", "DRTO", "EVER", "GAAR", "JEFF", "GLAC", "GLBA", "GRCA",
-  "GRTE", "GRBA", "GRSA", "GRSM", "GUMO", "HALE", "HAVO", "HOSP",
-  "INDU", "ISRO", "JOTR", "KATM", "KEFJ", "KICA", "KOVA", "LACL",
-  "LAVO", "MACA", "MEVE", "MORA", "NERI", "NOCA", "OLYM", "PEFO",
-  "PINN", "REDW", "ROMO", "SAGU", "SEQU", "SHEN", "THRO", "VIIS",
-  "VOYA", "WHSA", "WICA", "WRST", "YELL", "YOSE", "ZION",
-]);
+
 
 /**
  * Regex patterns that indicate a park belongs to multiple filter groups.
@@ -189,10 +176,10 @@ const NATIONAL_PARK_CODES = new Set([
  * when either of their parent groups is enabled.
  */
 const DUAL_DESIGNATION_PATTERNS: { pattern: RegExp; extraTypes: string[] }[] = [
-  // "X National Park and Preserve" → also match National Parks group
-  { pattern: /national park and preserve/i, extraTypes: ["National Park", "National Parks"] },
-  // "X National Park and Preserve" → also match National Preserves group
-  { pattern: /national park and preserve/i, extraTypes: ["National Preserve", "National Preserves"] },
+  // "X National Park & Preserve" / "X National Park and Preserve" → also match National Parks group
+  { pattern: /national park (?:&|and) preserve/i, extraTypes: ["National Park", "National Parks"] },
+  // "X National Park & Preserve" / "X National Park and Preserve" → also match National Preserves group
+  { pattern: /national park (?:&|and) preserve/i, extraTypes: ["National Preserve", "National Preserves"] },
 ];
 
 /** Returns true when a park should be shown given the current filter. */
@@ -211,7 +198,7 @@ export function isTypeEnabled(
   // regardless of their boundary unit_type (handles parks typed as Preserves etc.)
   if (
     unitCode &&
-    NATIONAL_PARK_CODES.has(unitCode.toUpperCase()) &&
+    NATIONAL_PARK_BOUNDARY_CODES.has(unitCode.toUpperCase()) &&
     (enabledTypes.has("National Park") || enabledTypes.has("National Parks"))
   ) {
     return true;
