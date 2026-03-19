@@ -65,7 +65,7 @@ interface NpsApiResponse {
  * Returns the full array of park data.
  */
 export async function fetchAllParksFromNpsApi(
-  apiKey: string
+  apiKey: string,
 ): Promise<NpsApiPark[]> {
   const allParks: NpsApiPark[] = [];
   const limit = 50;
@@ -78,7 +78,7 @@ export async function fetchAllParksFromNpsApi(
 
     if (!response.ok) {
       throw new Error(
-        `NPS API request failed: ${response.status} ${response.statusText}`
+        `NPS API request failed: ${response.status} ${response.statusText}`,
       );
     }
 

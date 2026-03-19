@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { UNIT_TYPE_COLORS, DEFAULT_UNIT_COLOR } from "@/lib/config/map";
+import { DEFAULT_UNIT_COLOR, UNIT_TYPE_COLORS } from "@/lib/config/map";
 import { NATIONAL_PARK_BOUNDARY_CODES } from "@/lib/constants/national-parks";
 
 /**
@@ -9,22 +9,84 @@ import { NATIONAL_PARK_BOUNDARY_CODES } from "@/lib/constants/national-parks";
  * Each entry maps a display label → its color, matching unitType strings,
  * and a hardcoded total count of parks in that group across the full dataset.
  */
-const PARK_TYPE_GROUPS: { label: string; color: string; types: string[]; count: number }[] = [
-  { label: "National Park", color: "#2D6A4F", types: ["National Park", "National Parks"], count: 63 },
-  { label: "National Monument", color: "#D4A843", types: ["National Monument", "National Monuments", "National Monument & Preserve"], count: 87 },
-  { label: "National Historic Site", color: "#8B4513", types: ["National Historic Site", "National Historic Sites", "National Historical Park", "National Historical Parks"], count: 140 },
-  { label: "National Recreation Area", color: "#4A90D9", types: ["National Recreation Area", "National Recreation Areas"], count: 18 },
-  { label: "National Seashore / Lakeshore", color: "#1B98C4", types: ["National Seashore", "National Seashores", "National Lakeshore", "National Lakeshores"], count: 13 },
-  { label: "National Preserve", color: "#5B8C5A", types: ["National Preserve", "National Preserves"], count: 13 },
-  { label: "National Memorial", color: "#9B59B6", types: ["National Memorial", "National Memorials"], count: 31 },
-  { label: "National Military Park / Battlefield", color: "#C0392B", types: ["National Military Park", "National Military Parks", "National Battlefield", "National Battlefields"], count: 20 },
+const PARK_TYPE_GROUPS: {
+  label: string;
+  color: string;
+  types: string[];
+  count: number;
+}[] = [
+  {
+    label: "National Park",
+    color: "#2D6A4F",
+    types: ["National Park", "National Parks"],
+    count: 63,
+  },
+  {
+    label: "National Monument",
+    color: "#D4A843",
+    types: [
+      "National Monument",
+      "National Monuments",
+      "National Monument & Preserve",
+    ],
+    count: 87,
+  },
+  {
+    label: "National Historic Site",
+    color: "#8B4513",
+    types: [
+      "National Historic Site",
+      "National Historic Sites",
+      "National Historical Park",
+      "National Historical Parks",
+    ],
+    count: 140,
+  },
+  {
+    label: "National Recreation Area",
+    color: "#4A90D9",
+    types: ["National Recreation Area", "National Recreation Areas"],
+    count: 18,
+  },
+  {
+    label: "National Seashore / Lakeshore",
+    color: "#1B98C4",
+    types: [
+      "National Seashore",
+      "National Seashores",
+      "National Lakeshore",
+      "National Lakeshores",
+    ],
+    count: 13,
+  },
+  {
+    label: "National Preserve",
+    color: "#5B8C5A",
+    types: ["National Preserve", "National Preserves"],
+    count: 13,
+  },
+  {
+    label: "National Memorial",
+    color: "#9B59B6",
+    types: ["National Memorial", "National Memorials"],
+    count: 31,
+  },
+  {
+    label: "National Military Park / Battlefield",
+    color: "#C0392B",
+    types: [
+      "National Military Park",
+      "National Military Parks",
+      "National Battlefield",
+      "National Battlefields",
+    ],
+    count: 20,
+  },
   { label: "Other", color: DEFAULT_UNIT_COLOR, types: [], count: 46 },
 ];
 
 /** Set of all explicitly-mapped unitType strings (used to classify "Other") */
-const KNOWN_TYPES = new Set(
-  Object.keys(UNIT_TYPE_COLORS)
-);
+const KNOWN_TYPES = new Set(Object.keys(UNIT_TYPE_COLORS));
 
 interface ParkTypeFilterProps {
   /** Currently-enabled unit type strings (all values from UNIT_TYPE_COLORS + "__other__") */
@@ -32,7 +94,10 @@ interface ParkTypeFilterProps {
   onToggleGroup: (types: string[], enabled: boolean) => void;
 }
 
-export function ParkTypeFilter({ enabledTypes, onToggleGroup }: ParkTypeFilterProps) {
+export function ParkTypeFilter({
+  enabledTypes,
+  onToggleGroup,
+}: ParkTypeFilterProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -40,7 +105,10 @@ export function ParkTypeFilter({ enabledTypes, onToggleGroup }: ParkTypeFilterPr
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -53,28 +121,28 @@ export function ParkTypeFilter({ enabledTypes, onToggleGroup }: ParkTypeFilterPr
       if (group.label === "Other") return enabledTypes.has("__other__");
       return group.types.every((t) => enabledTypes.has(t));
     },
-    [enabledTypes]
+    [enabledTypes],
   );
 
   const allEnabled = PARK_TYPE_GROUPS.every((g) => isGroupEnabled(g));
-  const noneEnabled = PARK_TYPE_GROUPS.every((g) => !isGroupEnabled(g));
+  const _noneEnabled = PARK_TYPE_GROUPS.every((g) => !isGroupEnabled(g));
 
   // Sum hardcoded counts for all enabled groups
   const selectedCount = PARK_TYPE_GROUPS.reduce(
     (sum, g) => (isGroupEnabled(g) ? sum + g.count : sum),
-    0
+    0,
   );
 
   const handleSelectAll = useCallback(() => {
     const allTypes = PARK_TYPE_GROUPS.flatMap((g) =>
-      g.label === "Other" ? ["__other__"] : g.types
+      g.label === "Other" ? ["__other__"] : g.types,
     );
     onToggleGroup(allTypes, true);
   }, [onToggleGroup]);
 
   const handleUnselectAll = useCallback(() => {
     const allTypes = PARK_TYPE_GROUPS.flatMap((g) =>
-      g.label === "Other" ? ["__other__"] : g.types
+      g.label === "Other" ? ["__other__"] : g.types,
     );
     onToggleGroup(allTypes, false);
   }, [onToggleGroup]);
@@ -92,6 +160,7 @@ export function ParkTypeFilter({ enabledTypes, onToggleGroup }: ParkTypeFilterPr
       >
         {/* Funnel / filter icon */}
         <svg
+          aria-hidden="true"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="none"
@@ -168,8 +237,6 @@ export function buildAllEnabledTypes(): Set<string> {
   return set;
 }
 
-
-
 /**
  * Regex patterns that indicate a park belongs to multiple filter groups.
  * Used to show dual-designation parks (e.g. "National Park and Preserve")
@@ -177,9 +244,15 @@ export function buildAllEnabledTypes(): Set<string> {
  */
 const DUAL_DESIGNATION_PATTERNS: { pattern: RegExp; extraTypes: string[] }[] = [
   // "X National Park & Preserve" / "X National Park and Preserve" → also match National Parks group
-  { pattern: /national park (?:&|and) preserve/i, extraTypes: ["National Park", "National Parks"] },
+  {
+    pattern: /national park (?:&|and) preserve/i,
+    extraTypes: ["National Park", "National Parks"],
+  },
   // "X National Park & Preserve" / "X National Park and Preserve" → also match National Preserves group
-  { pattern: /national park (?:&|and) preserve/i, extraTypes: ["National Preserve", "National Preserves"] },
+  {
+    pattern: /national park (?:&|and) preserve/i,
+    extraTypes: ["National Preserve", "National Preserves"],
+  },
 ];
 
 /** Returns true when a park should be shown given the current filter. */
@@ -187,12 +260,14 @@ export function isTypeEnabled(
   unitType: string | null,
   unitName: string | null,
   enabledTypes: Set<string>,
-  unitCode?: string | null
+  unitCode?: string | null,
 ): boolean {
   // Direct match on unitType
-  if (unitType && KNOWN_TYPES.has(unitType) && enabledTypes.has(unitType)) return true;
+  if (unitType && KNOWN_TYPES.has(unitType) && enabledTypes.has(unitType))
+    return true;
   if (!unitType && enabledTypes.has("__other__")) return true;
-  if (unitType && !KNOWN_TYPES.has(unitType) && enabledTypes.has("__other__")) return true;
+  if (unitType && !KNOWN_TYPES.has(unitType) && enabledTypes.has("__other__"))
+    return true;
 
   // If the National Park filter is on, include all 63 official national parks
   // regardless of their boundary unit_type (handles parks typed as Preserves etc.)
@@ -207,7 +282,10 @@ export function isTypeEnabled(
   // Check dual-designation by park name
   if (unitName) {
     for (const { pattern, extraTypes } of DUAL_DESIGNATION_PATTERNS) {
-      if (pattern.test(unitName) && extraTypes.some((t) => enabledTypes.has(t))) {
+      if (
+        pattern.test(unitName) &&
+        extraTypes.some((t) => enabledTypes.has(t))
+      ) {
         return true;
       }
     }

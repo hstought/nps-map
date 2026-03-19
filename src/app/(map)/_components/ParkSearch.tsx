@@ -49,7 +49,7 @@ export function ParkSearch({ onSelectPark }: ParkSearchProps) {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `/api/parks/search?q=${encodeURIComponent(value.trim())}`
+          `/api/parks/search?q=${encodeURIComponent(value.trim())}`,
         );
         if (!response.ok) throw new Error("Search failed");
         const data: ParkSearchResult[] = await response.json();
@@ -72,7 +72,7 @@ export function ParkSearch({ onSelectPark }: ParkSearchProps) {
       setHighlightedIndex(-1);
       onSelectPark(park);
     },
-    [onSelectPark]
+    [onSelectPark],
   );
 
   // Keyboard navigation
@@ -84,13 +84,13 @@ export function ParkSearch({ onSelectPark }: ParkSearchProps) {
         case "ArrowDown":
           e.preventDefault();
           setHighlightedIndex((prev) =>
-            prev < results.length - 1 ? prev + 1 : 0
+            prev < results.length - 1 ? prev + 1 : 0,
           );
           break;
         case "ArrowUp":
           e.preventDefault();
           setHighlightedIndex((prev) =>
-            prev > 0 ? prev - 1 : results.length - 1
+            prev > 0 ? prev - 1 : results.length - 1,
           );
           break;
         case "Enter":
@@ -106,7 +106,7 @@ export function ParkSearch({ onSelectPark }: ParkSearchProps) {
           break;
       }
     },
-    [isOpen, results, highlightedIndex, handleSelect]
+    [isOpen, results, highlightedIndex, handleSelect],
   );
 
   return (
@@ -116,6 +116,7 @@ export function ParkSearch({ onSelectPark }: ParkSearchProps) {
         {/* Search icon */}
         <div className="pointer-events-none flex h-10 w-10 shrink-0 items-center justify-center">
           <svg
+            aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"
@@ -161,6 +162,7 @@ export function ParkSearch({ onSelectPark }: ParkSearchProps) {
             aria-label="Clear search"
           >
             <svg
+              aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="none"
@@ -187,7 +189,9 @@ export function ParkSearch({ onSelectPark }: ParkSearchProps) {
                 onClick={() => handleSelect(park)}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left transition-colors ${
-                  index === highlightedIndex ? "bg-green-50" : "hover:bg-gray-50"
+                  index === highlightedIndex
+                    ? "bg-green-50"
+                    : "hover:bg-gray-50"
                 }`}
               >
                 <span className="text-sm font-medium text-gray-900 leading-tight">
@@ -209,11 +213,14 @@ export function ParkSearch({ onSelectPark }: ParkSearchProps) {
       )}
 
       {/* No results message */}
-      {isOpen && results.length === 0 && !isLoading && query.trim().length >= 2 && (
-        <div className="absolute left-0 top-full mt-1 w-72 rounded-lg bg-white px-3 py-3 shadow-lg ring-1 ring-black/5">
-          <p className="text-center text-sm text-gray-500">No parks found</p>
-        </div>
-      )}
+      {isOpen &&
+        results.length === 0 &&
+        !isLoading &&
+        query.trim().length >= 2 && (
+          <div className="absolute left-0 top-full mt-1 w-72 rounded-lg bg-white px-3 py-3 shadow-lg ring-1 ring-black/5">
+            <p className="text-center text-sm text-gray-500">No parks found</p>
+          </div>
+        )}
     </div>
   );
 }

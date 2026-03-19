@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getParkBoundaries, isMemoryError } from "@/lib/data/parks";
 
 export async function GET(request: NextRequest) {
@@ -9,33 +9,27 @@ export async function GET(request: NextRequest) {
   if (!bboxParam || !zoomParam) {
     return NextResponse.json(
       { error: "Missing required parameters: bbox, zoom" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const [west, south, east, north] = bboxParam.split(",").map(Number);
 
-  if ([west, south, east, north].some(isNaN)) {
+  if ([west, south, east, north].some(Number.isNaN)) {
     return NextResponse.json(
       { error: "Invalid bbox format. Expected: west,south,east,north" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const zoom = parseFloat(zoomParam);
 
-  if (isNaN(zoom)) {
-    return NextResponse.json(
-      { error: "Invalid zoom value" },
-      { status: 400 }
-    );
+  if (Number.isNaN(zoom)) {
+    return NextResponse.json({ error: "Invalid zoom value" }, { status: 400 });
   }
 
   try {
-    const geojson = await getParkBoundaries(
-      { west, south, east, north },
-      zoom
-    );
+    const geojson = await getParkBoundaries({ west, south, east, north }, zoom);
 
     return NextResponse.json(geojson, {
       headers: {
@@ -48,13 +42,13 @@ export async function GET(request: NextRequest) {
     if (isMemoryError(error)) {
       return NextResponse.json(
         { error: "Boundary query too large — zoom in or reduce the viewport" },
-        { status: 503, headers: { "Retry-After": "5" } }
+        { status: 503, headers: { "Retry-After": "5" } },
       );
     }
 
     return NextResponse.json(
       { error: "Failed to fetch park boundaries" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

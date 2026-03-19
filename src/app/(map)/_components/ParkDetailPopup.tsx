@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import type { ParkDetail } from "@/types/park";
 
 interface ParkDetailPopupProps {
@@ -20,7 +20,7 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
 
   useEffect(() => {
     setIsDescriptionExpanded(false);
-  }, [unitCode]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +36,8 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
         const data: ParkDetail = await response.json();
         if (!cancelled) setDetail(data);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unknown error");
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -64,6 +65,7 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
       <div className="flex w-72 flex-col items-center justify-center gap-2 p-6">
         <p className="text-sm text-red-600">{error || "Park not found"}</p>
         <button
+          type="button"
           onClick={onClose}
           className="text-sm text-gray-500 underline hover:text-gray-700"
         >
@@ -79,7 +81,7 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
     descriptionText.length > DESCRIPTION_TRUNCATE_LENGTH;
   const displayedDescription = descriptionText
     ? descriptionIsTruncatable && !isDescriptionExpanded
-      ? descriptionText.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trim() + "…"
+      ? `${descriptionText.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trim()}…`
       : descriptionText
     : null;
   const stateAbbreviations = detail.state
@@ -88,8 +90,8 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
           detail.state
             .split(",")
             .map((state) => state.trim().toUpperCase())
-            .filter(Boolean)
-        )
+            .filter(Boolean),
+        ),
       )
     : [];
   const formattedStates = stateAbbreviations.join(", ");
@@ -149,7 +151,11 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
               <button
                 type="button"
                 onClick={() => setIsDescriptionExpanded((prev) => !prev)}
-                aria-label={isDescriptionExpanded ? "Collapse park description" : "Expand park description"}
+                aria-label={
+                  isDescriptionExpanded
+                    ? "Collapse park description"
+                    : "Expand park description"
+                }
                 className="self-start text-xs font-medium text-green-700 hover:text-green-900 transition-colors"
               >
                 {isDescriptionExpanded ? "See less" : "See more"}
@@ -169,6 +175,7 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
             >
               Visit NPS.gov
               <svg
+                aria-hidden="true"
                 className="h-3.5 w-3.5"
                 fill="none"
                 viewBox="0 0 24 24"

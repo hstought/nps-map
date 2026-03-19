@@ -25,12 +25,16 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Override MapLibre popup defaults for a clean look */
+/* Override MapLibre popup defaults for a clean look.
+   Using !important because maplibre-gl.css may load after
+   globals.css in Next.js component-level imports. */
 .maplibregl-popup-content {
   padding: 0 !important;
   border-radius: 0.75rem !important;
-  overflow: hidden;
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 10px 25px -5px rgb(0 0 0 / 0.15),
+    0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
 }
 
 .maplibregl-popup-close-button {

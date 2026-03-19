@@ -1,5 +1,5 @@
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { neon } from "@neondatabase/serverless";
 
 /**
@@ -70,7 +70,7 @@ async function main() {
   for (const rawLine of envContent.split("\n")) {
     const line = rawLine.replace(/\r$/, "");
     const match = line.match(/^([^#=]+)=["']?(.*?)["']?$/);
-    if (match && match[2]) process.env[match[1].trim()] = match[2].trim();
+    if (match?.[2]) process.env[match[1].trim()] = match[2].trim();
   }
 
   const databaseUrl = process.env.DATABASE_URL;
@@ -83,7 +83,7 @@ async function main() {
   if (!apiKey) {
     console.error("❌ NPS_API_KEY not found in .env.local");
     console.error(
-      "   Get one at: https://www.nps.gov/subjects/developer/get-started.htm"
+      "   Get one at: https://www.nps.gov/subjects/developer/get-started.htm",
     );
     process.exit(1);
   }
@@ -103,7 +103,7 @@ async function main() {
 
     if (!response.ok) {
       throw new Error(
-        `NPS API error: ${response.status} ${response.statusText}`
+        `NPS API error: ${response.status} ${response.statusText}`,
       );
     }
 
@@ -185,13 +185,13 @@ async function main() {
   const detailRows = await sql`SELECT park_code FROM park_details`;
 
   const boundaryCodes = new Set(
-    boundaryRows.map((r) => (r.unit_code as string).toLowerCase())
+    boundaryRows.map((r) => (r.unit_code as string).toLowerCase()),
   );
   const detailCodes = new Set(detailRows.map((r) => r.park_code as string));
 
   const missingDetails = [...boundaryCodes].filter((c) => !detailCodes.has(c));
   const missingBoundaries = [...detailCodes].filter(
-    (c) => !boundaryCodes.has(c)
+    (c) => !boundaryCodes.has(c),
   );
 
   console.log(`\n🏁 Done!`);
@@ -200,16 +200,20 @@ async function main() {
 
   if (missingDetails.length > 0) {
     console.log(
-      `\n⚠️  ${missingDetails.length} boundaries without API details:`
+      `\n⚠️  ${missingDetails.length} boundaries without API details:`,
     );
-    console.log(`   ${missingDetails.slice(0, 20).join(", ")}${missingDetails.length > 20 ? "..." : ""}`);
+    console.log(
+      `   ${missingDetails.slice(0, 20).join(", ")}${missingDetails.length > 20 ? "..." : ""}`,
+    );
   }
 
   if (missingBoundaries.length > 0) {
     console.log(
-      `\n⚠️  ${missingBoundaries.length} API parks without boundaries:`
+      `\n⚠️  ${missingBoundaries.length} API parks without boundaries:`,
     );
-    console.log(`   ${missingBoundaries.slice(0, 20).join(", ")}${missingBoundaries.length > 20 ? "..." : ""}`);
+    console.log(
+      `   ${missingBoundaries.slice(0, 20).join(", ")}${missingBoundaries.length > 20 ? "..." : ""}`,
+    );
   }
 }
 

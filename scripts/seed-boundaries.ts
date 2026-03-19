@@ -1,5 +1,5 @@
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { neon } from "@neondatabase/serverless";
 
 /**
@@ -17,7 +17,7 @@ async function main() {
   for (const rawLine of envContent.split("\n")) {
     const line = rawLine.replace(/\r$/, "");
     const match = line.match(/^([^#=]+)=["']?(.*?)["']?$/);
-    if (match && match[2]) process.env[match[1].trim()] = match[2].trim();
+    if (match?.[2]) process.env[match[1].trim()] = match[2].trim();
   }
 
   const databaseUrl = process.env.DATABASE_URL;

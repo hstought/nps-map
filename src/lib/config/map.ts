@@ -1,4 +1,4 @@
-import type { MapStyleKey, MapStyleConfig, ViewState } from "@/types/map";
+import type { MapStyleConfig, MapStyleKey, ViewState } from "@/types/map";
 
 export const MAP_STYLES: Record<MapStyleKey, MapStyleConfig> = {
   liberty: {

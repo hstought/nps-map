@@ -1,29 +1,40 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Map, {
-  Source,
-  Layer,
-  Popup,
-  NavigationControl,
-  type MapRef,
-  type MapLayerMouseEvent,
-} from "react-map-gl/maplibre";
 import type {
+  ExpressionSpecification,
   FillLayerSpecification,
   LineLayerSpecification,
-  ExpressionSpecification,
 } from "maplibre-gl";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import MapGL, {
+  Layer,
+  type MapLayerMouseEvent,
+  type MapRef,
+  NavigationControl,
+  Popup,
+  Source,
+} from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { INITIAL_VIEW_STATE, DEFAULT_UNIT_COLOR, UNIT_TYPE_COLORS } from "@/lib/config/map";
-import type { ParkBoundaryCollection, ParkBoundaryProperties } from "@/types/park";
+import {
+  DEFAULT_UNIT_COLOR,
+  getStyleUrl,
+  INITIAL_VIEW_STATE,
+  UNIT_TYPE_COLORS,
+} from "@/lib/config/map";
 import type { MapStyleKey } from "@/types/map";
-import { getStyleUrl } from "@/lib/config/map";
-import { ParkDetailPopup } from "./ParkDetailPopup";
+import type {
+  ParkBoundaryCollection,
+  ParkBoundaryProperties,
+  ParkSearchResult,
+} from "@/types/park";
 import { MapStyleSwitcher } from "./MapStyleSwitcher";
-import { ParkTypeFilter, buildAllEnabledTypes, isTypeEnabled } from "./ParkTypeFilter";
+import { ParkDetailPopup } from "./ParkDetailPopup";
 import { ParkSearch } from "./ParkSearch";
-import type { ParkSearchResult } from "@/types/park";
+import {
+  buildAllEnabledTypes,
+  isTypeEnabled,
+  ParkTypeFilter,
+} from "./ParkTypeFilter";
 
 // Build the MapLibre match expression for fill-color based on unit type.
 // Cast justified: the dynamic spread from UNIT_TYPE_COLORS produces string[]
@@ -31,10 +42,7 @@ import type { ParkSearchResult } from "@/types/park";
 const fillColorMatch = [
   "match",
   ["get", "unitType"],
-  ...Object.entries(UNIT_TYPE_COLORS).flatMap(([type, color]) => [
-    type,
-    color,
-  ]),
+  ...Object.entries(UNIT_TYPE_COLORS).flat(),
   DEFAULT_UNIT_COLOR,
 ] as unknown as ExpressionSpecification;
 
@@ -77,7 +85,8 @@ export function MapView() {
   const [hoveredFeatureId, setHoveredFeatureId] = useState<string | null>(null);
   const [currentStyle, setCurrentStyle] = useState<MapStyleKey>("liberty");
   const [isLoading, setIsLoading] = useState(false);
-  const [enabledTypes, setEnabledTypes] = useState<Set<string>>(buildAllEnabledTypes);
+  const [enabledTypes, setEnabledTypes] =
+    useState<Set<string>>(buildAllEnabledTypes);
   const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch park boundaries based on the current viewport
@@ -98,7 +107,7 @@ export function MapView() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/parks?bbox=${bbox}&zoom=${Math.round(zoom)}`
+        `/api/parks?bbox=${bbox}&zoom=${Math.round(zoom)}`,
       );
       if (!response.ok) throw new Error("Failed to fetch parks");
       const data: ParkBoundaryCollection = await response.json();
@@ -111,15 +120,12 @@ export function MapView() {
   }, []);
 
   // Debounced fetch on viewport change
-  const handleMoveEnd = useCallback(
-    () => {
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-      fetchTimeoutRef.current = setTimeout(fetchParks, 300);
-    },
-    [fetchParks]
-  );
+  const handleMoveEnd = useCallback(() => {
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    fetchTimeoutRef.current = setTimeout(fetchParks, 300);
+  }, [fetchParks]);
 
   // Initial data load
   useEffect(() => {
@@ -162,7 +168,7 @@ export function MapView() {
       if (hoveredFeatureId !== null) {
         map.setFeatureState(
           { source: "park-boundaries", id: hoveredFeatureId },
-          { hover: false }
+          { hover: false },
         );
       }
 
@@ -171,7 +177,7 @@ export function MapView() {
         const featureId = String(feature.id);
         map.setFeatureState(
           { source: "park-boundaries", id: featureId },
-          { hover: true }
+          { hover: true },
         );
         setHoveredFeatureId(featureId);
         map.getCanvas().style.cursor = "pointer";
@@ -180,7 +186,7 @@ export function MapView() {
         map.getCanvas().style.cursor = "";
       }
     },
-    [hoveredFeatureId]
+    [hoveredFeatureId],
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -190,7 +196,7 @@ export function MapView() {
     if (hoveredFeatureId !== null) {
       map.setFeatureState(
         { source: "park-boundaries", id: hoveredFeatureId },
-        { hover: false }
+        { hover: false },
       );
       setHoveredFeatureId(null);
     }
@@ -198,7 +204,7 @@ export function MapView() {
   }, [hoveredFeatureId]);
 
   // Resolve the current map style URL
-  const styleUrl = getStyleUrl(currentStyle) || getStyleUrl("liberty")!;
+  const styleUrl = getStyleUrl(currentStyle) ?? getStyleUrl("liberty") ?? "";
 
   // Toggle an entire type group on/off
   const handleToggleGroup = useCallback((types: string[], enabled: boolean) => {
@@ -237,14 +243,21 @@ export function MapView() {
     return {
       ...parkData,
       features: parkData.features
-        .filter((f) => isTypeEnabled(f.properties.unitType, f.properties.unitName, enabledTypes, f.properties.unitCode))
+        .filter((f) =>
+          isTypeEnabled(
+            f.properties.unitType,
+            f.properties.unitName,
+            enabledTypes,
+            f.properties.unitCode,
+          ),
+        )
         .map((f, i) => ({ ...f, id: i })),
     };
   }, [parkData, enabledTypes]);
 
   return (
     <div className="relative h-full w-full">
-      <Map
+      <MapGL
         ref={mapRef}
         initialViewState={INITIAL_VIEW_STATE}
         style={{ width: "100%", height: "100%" }}
@@ -266,16 +279,8 @@ export function MapView() {
             tolerance={0.375}
             buffer={256}
           >
-            <Layer
-              id="park-fill"
-              type="fill"
-              paint={fillPaint}
-            />
-            <Layer
-              id="park-outline"
-              type="line"
-              paint={outlinePaint}
-            />
+            <Layer id="park-fill" type="fill" paint={fillPaint} />
+            <Layer id="park-outline" type="line" paint={outlinePaint} />
           </Source>
         )}
 
@@ -295,7 +300,7 @@ export function MapView() {
             />
           </Popup>
         )}
-      </Map>
+      </MapGL>
 
       {/* Top-left controls: filter + search */}
       <div className="absolute top-4 left-4 z-10 flex items-start gap-2">

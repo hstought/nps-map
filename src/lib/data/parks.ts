@@ -1,9 +1,12 @@
-import { getDb } from "@/lib/db";
 import { getSimplificationTolerance } from "@/lib/config/map";
-import type { ParkBoundaryCollection } from "@/types/park";
-import type { BBox } from "@/types/map";
-import type { ParkDetail, ParkSearchResult } from "@/types/park";
 import type { NpsApiPark } from "@/lib/data/nps-api";
+import { getDb } from "@/lib/db";
+import type { BBox } from "@/types/map";
+import type {
+  ParkBoundaryCollection,
+  ParkDetail,
+  ParkSearchResult,
+} from "@/types/park";
 
 /**
  * Detect whether a Postgres / GEOS error is an out-of-memory failure.
@@ -18,7 +21,11 @@ export function isMemoryError(error: unknown): boolean {
     if (code === "53200") return true;
   }
   const msg = error instanceof Error ? error.message : String(error);
-  return msg.includes("bad_alloc") || msg.includes("out of memory") || msg.includes("TopologyException");
+  return (
+    msg.includes("bad_alloc") ||
+    msg.includes("out of memory") ||
+    msg.includes("TopologyException")
+  );
 }
 
 /** Maximum number of park boundaries returned per request. */
@@ -32,7 +39,7 @@ async function queryBoundaries(
   sql: ReturnType<typeof getDb>,
   bbox: BBox,
   tolerance: number,
-  simplifyFn: "ST_SimplifyPreserveTopology" | "ST_Simplify"
+  simplifyFn: "ST_SimplifyPreserveTopology" | "ST_Simplify",
 ) {
   // Template literals don't allow dynamic function names, so we branch instead.
   if (simplifyFn === "ST_SimplifyPreserveTopology") {
@@ -71,20 +78,25 @@ async function queryBoundaries(
  */
 export async function getParkBoundaries(
   bbox: BBox,
-  zoom: number
+  zoom: number,
 ): Promise<ParkBoundaryCollection> {
   const sql = getDb();
   const tolerance = getSimplificationTolerance(zoom);
 
-  let rows;
+  let rows: Awaited<ReturnType<typeof queryBoundaries>> | undefined;
   try {
-    rows = await queryBoundaries(sql, bbox, tolerance, "ST_SimplifyPreserveTopology");
+    rows = await queryBoundaries(
+      sql,
+      bbox,
+      tolerance,
+      "ST_SimplifyPreserveTopology",
+    );
   } catch (error) {
     if (!isMemoryError(error)) throw error;
 
     // Retry 1: lighter algorithm, same tolerance
     console.warn(
-      "ST_SimplifyPreserveTopology OOM, falling back to ST_Simplify"
+      "ST_SimplifyPreserveTopology OOM, falling back to ST_Simplify",
     );
     try {
       rows = await queryBoundaries(sql, bbox, tolerance, "ST_Simplify");
@@ -94,9 +106,14 @@ export async function getParkBoundaries(
       // Retry 2: much more aggressive simplification (5× tolerance)
       const aggressiveTolerance = tolerance * 5;
       console.warn(
-        `ST_Simplify OOM at tolerance ${tolerance}, retrying with ${aggressiveTolerance}`
+        `ST_Simplify OOM at tolerance ${tolerance}, retrying with ${aggressiveTolerance}`,
       );
-      rows = await queryBoundaries(sql, bbox, aggressiveTolerance, "ST_Simplify");
+      rows = await queryBoundaries(
+        sql,
+        bbox,
+        aggressiveTolerance,
+        "ST_Simplify",
+      );
     }
   }
 
@@ -123,7 +140,7 @@ export async function getParkBoundaries(
  * Fetch cached park detail by unit code for the popup.
  */
 export async function getParkDetail(
-  unitCode: string
+  unitCode: string,
 ): Promise<ParkDetail | null> {
   const sql = getDb();
 
@@ -163,7 +180,8 @@ export async function getParkDetail(
     unitCode: row.unit_code as string,
     fullName: (row.full_name as string) || (row.unit_name as string),
     description: row.description as string | null,
-    designation: (row.designation as string) || (row.unit_type as string | null),
+    designation:
+      (row.designation as string) || (row.unit_type as string | null),
     state: (row.states as string | null) || (row.state as string | null),
     url: row.url as string | null,
     weatherInfo: row.weather_info as string | null,
@@ -220,7 +238,7 @@ export async function searchParks(query: string): Promise<ParkSearchResult[]> {
  * Used by the cron sync job to keep cached park metadata up-to-date.
  */
 export async function upsertParkDetails(
-  parks: NpsApiPark[]
+  parks: NpsApiPark[],
 ): Promise<{ synced: number }> {
   const sql = getDb();
   let synced = 0;

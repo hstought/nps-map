@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { fetchAllParksFromNpsApi } from "@/lib/data/nps-api";
 import { upsertParkDetails } from "@/lib/data/parks";
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   if (!apiKey) {
     return NextResponse.json(
       { error: "NPS_API_KEY not configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     console.error("Cron sync error:", error);
     return NextResponse.json(
       { error: "Sync failed", details: String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

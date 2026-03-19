@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { searchParks } from "@/lib/data/parks";
 
 export async function GET(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     console.error("Error searching parks:", error);
     return NextResponse.json(
       { error: "Failed to search parks" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
