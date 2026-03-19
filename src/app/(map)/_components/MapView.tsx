@@ -22,6 +22,8 @@ import { getStyleUrl } from "@/lib/config/map";
 import { ParkDetailPopup } from "./ParkDetailPopup";
 import { MapStyleSwitcher } from "./MapStyleSwitcher";
 import { ParkTypeFilter, buildAllEnabledTypes, isTypeEnabled } from "./ParkTypeFilter";
+import { ParkSearch } from "./ParkSearch";
+import type { ParkSearchResult } from "@/types/park";
 
 // Build the MapLibre match expression for fill-color based on unit type.
 // Cast justified: the dynamic spread from UNIT_TYPE_COLORS produces string[]
@@ -210,6 +212,25 @@ export function MapView() {
     });
   }, []);
 
+  // Handle park selection from search
+  const handleParkSearchSelect = useCallback((park: ParkSearchResult) => {
+    if (!park.latitude || !park.longitude) return;
+
+    mapRef.current?.flyTo({
+      center: [park.longitude, park.latitude],
+      zoom: 10,
+      offset: [0, POPUP_CARD_CENTER_OFFSET_Y],
+      duration: SELECTED_PARK_FLY_DURATION_MS,
+      essential: true,
+    });
+
+    setSelectedPark({
+      unitCode: park.unitCode,
+      longitude: park.longitude,
+      latitude: park.latitude,
+    });
+  }, []);
+
   // Memoize filtered + id-stamped features so the count always reflects the current filter
   const dataWithIds = useMemo(() => {
     if (!parkData) return null;
@@ -276,11 +297,14 @@ export function MapView() {
         )}
       </Map>
 
-      {/* Park type filter */}
-      <ParkTypeFilter
-        enabledTypes={enabledTypes}
-        onToggleGroup={handleToggleGroup}
-      />
+      {/* Top-left controls: filter + search */}
+      <div className="absolute top-4 left-4 z-10 flex items-start gap-2">
+        <ParkTypeFilter
+          enabledTypes={enabledTypes}
+          onToggleGroup={handleToggleGroup}
+        />
+        <ParkSearch onSelectPark={handleParkSearchSelect} />
+      </div>
 
       {/* Map style switcher */}
       <MapStyleSwitcher

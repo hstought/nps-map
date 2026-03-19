@@ -80,7 +80,7 @@ export function ParkTypeFilter({ enabledTypes, onToggleGroup }: ParkTypeFilterPr
   }, [onToggleGroup]);
 
   return (
-    <div ref={containerRef} className="absolute top-4 left-4 z-10">
+    <div ref={containerRef} className="relative">
       {/* Filter toggle button */}
       <button
         type="button"

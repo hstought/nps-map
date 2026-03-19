@@ -2,7 +2,7 @@ import { getDb } from "@/lib/db";
 import { getSimplificationTolerance } from "@/lib/config/map";
 import type { ParkBoundaryCollection } from "@/types/park";
 import type { BBox } from "@/types/map";
-import type { ParkDetail } from "@/types/park";
+import type { ParkDetail, ParkSearchResult } from "@/types/park";
 import type { NpsApiPark } from "@/lib/data/nps-api";
 
 /**
@@ -153,6 +153,38 @@ export async function getParkDetail(
     directionsInfo: row.directions_info as string | null,
     directionsUrl: row.directions_url as string | null,
   };
+}
+
+/**
+ * Search parks by name, returning matches with coordinates for map navigation.
+ */
+export async function searchParks(query: string): Promise<ParkSearchResult[]> {
+  const sql = getDb();
+  const pattern = `%${query}%`;
+
+  const rows = await sql`
+    SELECT
+      b.unit_code,
+      COALESCE(d.full_name, b.unit_name) AS unit_name,
+      COALESCE(b.unit_type, d.designation) AS unit_type,
+      COALESCE(d.states, b.state) AS state,
+      d.latitude,
+      d.longitude
+    FROM park_boundaries b
+    LEFT JOIN park_details d ON LOWER(b.unit_code) = d.park_code
+    WHERE COALESCE(d.full_name, b.unit_name) ILIKE ${pattern}
+    ORDER BY COALESCE(d.full_name, b.unit_name)
+    LIMIT 10
+  `;
+
+  return rows.map((row) => ({
+    unitCode: row.unit_code as string,
+    unitName: row.unit_name as string,
+    unitType: row.unit_type as string | null,
+    state: row.state as string | null,
+    latitude: row.latitude as number | null,
+    longitude: row.longitude as number | null,
+  }));
 }
 
 /**

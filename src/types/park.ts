@@ -20,6 +20,17 @@ export interface ParkBoundaryCollection {
   features: ParkBoundaryFeature[];
 }
 
+// Types for park search results
+
+export interface ParkSearchResult {
+  unitCode: string;
+  unitName: string;
+  unitType: string | null;
+  state: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 // Types for park detail data (from NPS API cache)
 
 export interface ParkImage {
