@@ -1,8 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { ParkDetail } from "@/types/park";
+import { CurrentWeatherSection } from "./CurrentWeatherSection";
+import { EntranceFeesSection } from "./EntranceFeesSection";
+import { ImageCarousel } from "./ImageCarousel";
+import { OperatingHoursSection } from "./OperatingHoursSection";
 
 interface ParkDetailPopupProps {
   unitCode: string;
@@ -15,7 +18,6 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
   const [detail, setDetail] = useState<ParkDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   useEffect(() => {
@@ -28,7 +30,6 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
     async function fetchDetail() {
       setIsLoading(true);
       setError(null);
-      setImageError(false);
 
       try {
         const response = await fetch(`/api/parks/${unitCode}`);
@@ -75,7 +76,6 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
     );
   }
 
-  const heroImage = detail.images?.[0];
   const descriptionText = detail.description ?? "";
   const descriptionIsTruncatable =
     descriptionText.length > DESCRIPTION_TRUNCATE_LENGTH;
@@ -97,33 +97,15 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
   const formattedStates = stateAbbreviations.join(", ");
 
   return (
-    <div className="flex w-80 flex-col overflow-hidden">
-      {/* Hero image */}
-      {heroImage && !imageError ? (
-        <div className="relative h-44 w-full overflow-hidden">
-          <Image
-            src={heroImage.url}
-            alt={heroImage.altText || detail.fullName}
-            fill
-            sizes="320px"
-            className="object-cover"
-            onError={() => setImageError(true)}
-            unoptimized
-          />
-          {heroImage.credit && (
-            <span className="absolute bottom-1 right-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white/80">
-              {heroImage.credit}
-            </span>
-          )}
-        </div>
-      ) : (
-        <div className="flex h-28 w-full items-center justify-center bg-gradient-to-br from-green-800 to-green-950">
-          <span className="text-3xl">🏞️</span>
-        </div>
-      )}
+    <div className="flex w-96 flex-col overflow-hidden">
+      {/* Image carousel */}
+      <ImageCarousel images={detail.images} parkName={detail.fullName} />
 
-      {/* Content */}
-      <div className="flex flex-col gap-2 p-4">
+      {/* Scrollable content body */}
+      <div
+        className="popup-scroll-body flex max-h-[55vh] flex-col gap-2.5 overflow-y-auto p-4"
+        onWheel={(e) => e.stopPropagation()}
+      >
         {/* Park name */}
         <h3 className="text-base font-semibold leading-tight text-gray-900">
           {detail.fullName}
@@ -140,6 +122,9 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
             <span className="text-xs text-gray-500">{formattedStates}</span>
           )}
         </div>
+
+        {/* Current weather */}
+        <CurrentWeatherSection unitCode={unitCode} />
 
         {/* Description */}
         {displayedDescription && (
@@ -163,6 +148,12 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
             )}
           </div>
         )}
+
+        {/* Operating hours */}
+        <OperatingHoursSection operatingHours={detail.operatingHours} />
+
+        {/* Entrance fees */}
+        <EntranceFeesSection entranceFees={detail.entranceFees} />
 
         {/* Footer */}
         <div className="mt-1 flex items-center justify-between border-t border-gray-100 pt-3">

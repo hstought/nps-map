@@ -57,3 +57,26 @@ body {
   color: #111827;
   background: #f3f4f6;
 }
+
+/* Slim scrollbar for the park detail popup body */
+.popup-scroll-body {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.popup-scroll-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.popup-scroll-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.popup-scroll-body::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 9999px;
+}
+
+.popup-scroll-body::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

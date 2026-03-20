@@ -101,3 +101,15 @@ export interface ParkDetail {
   directionsInfo: string | null;
   directionsUrl: string | null;
 }
+
+// Live weather from WeatherAPI.com
+
+export interface CurrentWeather {
+  tempF: number;
+  feelsLikeF: number;
+  conditionText: string;
+  conditionIcon: string;
+  humidity: number;
+  windMph: number;
+  windDir: string;
+}
