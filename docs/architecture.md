@@ -1,14 +1,14 @@
 # NPS Map — Architecture Document
 
-> **Status:** Draft — Awaiting review before implementation  
-> **Stack:** Next.js (App Router) · React · TypeScript · Tailwind CSS v4 · shadcn/ui · MapLibre GL JS · Neon (PostGIS) · Vercel  
-> **Last Updated:** 2026-03-03
+> **Status:** Implemented  
+> **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · MapLibre GL JS · Neon (PostGIS) · Vercel  
+> **Last Updated:** 2026-03-20
 
 ---
 
 ## 1. Overview
 
-An interactive web map displaying the boundaries of all ~435 National Park Service (NPS) units across the United States. Users can pan, zoom, and click on any territory to view park information and photos. Boundary geometries are stored in a Neon PostgreSQL database with PostGIS, and park metadata is cached from the NPS Developer API.
+An interactive web map displaying the boundaries of all ~435 National Park Service (NPS) units across the United States. Users can pan, zoom, and click on any territory to view park information, photos, live weather, entrance fees, and operating hours. Boundary geometries are stored in a Neon PostgreSQL database with PostGIS, and park metadata is cached from the NPS Developer API. The app includes park search, type-based filtering, and an image carousel in the detail popup.
 
 ---
 
@@ -20,18 +20,23 @@ An interactive web map displaying the boundaries of all ~435 National Park Servi
 │ geojson (50MB+)  │                              │                       │
 └─────────────────┘                               │  park_boundaries      │
                                                   │  park_details         │
-┌─────────────────┐      seed-details.ts          │                       │
-│  NPS API         │ ──────────────────────────▶  │  (cached metadata     │
+┌─────────────────┐      seed-details.ts /        │                       │
+│  NPS API         │      cron sync-parks  ────▶  │  (cached metadata     │
 │  /api/v1/parks   │                              │   + images JSONB)     │
 └─────────────────┘                               └───────────┬───────────┘
                                                               │
-                                                   SQL queries (PostGIS)
-                                                              │
-                                                  ┌───────────▼───────────┐
-                                                  │  Next.js API Routes   │
-                                                  │                       │
-                                                  │  GET /api/parks       │
+┌─────────────────┐                                SQL queries (PostGIS)
+│  WeatherAPI.com  │                                          │
+│  /v1/current     │──┐                           ┌───────────▼───────────┐
+└─────────────────┘  │                            │  Next.js API Routes   │
+                     │                            │                       │
+                     └───────────────────────────▶│  GET /api/parks       │
                                                   │  GET /api/parks/[code]│
+                                                  │  GET /api/parks/[code]│
+                                                  │       /weather        │
+                                                  │  GET /api/parks/search│
+                                                  │  GET /api/cron/       │
+                                                  │       sync-parks      │
                                                   └───────────┬───────────┘
                                                               │
                                                         JSON / GeoJSON
@@ -42,6 +47,8 @@ An interactive web map displaying the boundaries of all ~435 National Park Servi
                                                   │                       │
                                                   │  MapView              │
                                                   │  ParkDetailPopup      │
+                                                  │  ParkSearch           │
+                                                  │  ParkTypeFilter       │
                                                   │  MapStyleSwitcher     │
                                                   └───────────────────────┘
 ```
@@ -173,11 +180,22 @@ WHERE ST_Intersects(
 
 | Zoom   | Tolerance | Detail Level         |
 |--------|-----------|----------------------|
-| 0–4    | 0.05      | Very simplified      |
-| 5–7    | 0.01      | Moderate             |
-| 8–10   | 0.005     | Detailed             |
-| 11–13  | 0.001     | High detail          |
+| 0–3    | 0.05      | Very simplified      |
+| 4      | 0.02      | Simplified           |
+| 5–6    | 0.01      | Moderate             |
+| 7–9    | 0.005     | Detailed             |
+| 10–12  | 0.001     | High detail          |
+| 13     | 0.0005    | Very high detail     |
 | 14+    | 0.0001    | Full detail          |
+
+**Memory Error Handling:**
+
+PostGIS can run out of memory on complex geometries. The data layer detects OOM errors (`bad_alloc`, `TopologyException`) and retries with progressively lighter simplification:
+1. `ST_SimplifyPreserveTopology` (default)
+2. `ST_Simplify` (fallback)
+3. `ST_Simplify` with 5× tolerance (last resort)
+
+The API returns a maximum of 250 boundaries per request.
 
 **Response:** GeoJSON `FeatureCollection`
 
@@ -205,6 +223,8 @@ WHERE ST_Intersects(
 
 Returns cached park detail for the popup.
 
+**Cache-Control:** `public, max-age=3600, s-maxage=86400` (1h client, 24h CDN)
+
 **Response:**
 
 ```json
@@ -227,10 +247,70 @@ Returns cached park detail for the popup.
   ],
   "activities": [...],
   "entranceFees": [...],
+  "operatingHours": [...],
   "directionsInfo": "...",
   "directionsUrl": "..."
 }
 ```
+
+### 4.3 `GET /api/parks/[code]/weather`
+
+Returns current weather conditions for a park using WeatherAPI.com.
+
+**Cache-Control:** `public, max-age=1800, s-maxage=1800` (30m)
+
+**Response:**
+
+```json
+{
+  "tempF": 72,
+  "feelsLikeF": 70,
+  "conditionText": "Partly cloudy",
+  "conditionIcon": "//cdn.weatherapi.com/weather/64x64/day/116.png",
+  "humidity": 45,
+  "windMph": 8,
+  "windDir": "SW"
+}
+```
+
+**Error Handling:**
+- 404 if park not found or missing coordinates
+- 503 if weather API unavailable (graceful degradation)
+
+### 4.4 `GET /api/parks/search`
+
+Searches parks by name using ILIKE.
+
+**Query Parameters:**
+
+| Param | Type   | Required | Description                  |
+|-------|--------|----------|------------------------------|
+| `q`   | string | Yes      | Search query (min 2 chars)   |
+
+**Cache-Control:** `public, max-age=60, s-maxage=120` (1m client, 2m CDN)
+
+**Response:** Array of `ParkSearchResult` (max 10 results)
+
+```json
+[
+  {
+    "unitCode": "YOSE",
+    "unitName": "Yosemite National Park",
+    "unitType": "National Park",
+    "state": "CA",
+    "latitude": 37.8651,
+    "longitude": -119.5383
+  }
+]
+```
+
+### 4.5 `GET /api/cron/sync-parks`
+
+Monthly cron endpoint that re-syncs park metadata from the NPS API.
+
+**Security:** Protected by `Authorization: Bearer {CRON_SECRET}` header.
+
+**Triggered by:** Vercel Cron (`0 3 1 * *` — 3 AM UTC on the 1st of each month)
 
 ---
 
@@ -238,42 +318,56 @@ Returns cached park detail for the popup.
 
 ```
 app/
-├── layout.tsx                    ← Root layout (fonts, global styles)
-├── page.tsx                      ← Server Component, renders map page
-├── globals.css                   ← Tailwind v4 entry
+├── layout.tsx                       ← Root layout (fonts, Vercel Analytics)
+├── page.tsx                         ← Server Component, renders map page
+├── error.tsx                        ← Error boundary ("use client")
+├── globals.css                      ← Tailwind v4 entry + MapLibre overrides
 │
 ├── (map)/
 │   └── _components/
-│       ├── MapContainer.tsx      ← next/dynamic wrapper (ssr: false)
-│       ├── MapView.tsx           ← "use client" — react-map-gl map
-│       ├── ParkDetailPopup.tsx   ← "use client" — park info card
-│       ├── MapStyleSwitcher.tsx  ← "use client" — basemap toggle
-│       └── MapControls.tsx       ← "use client" — zoom/nav controls
+│       ├── MapContainer.tsx         ← next/dynamic wrapper (ssr: false)
+│       ├── MapView.tsx              ← "use client" — main interactive map
+│       ├── ParkDetailPopup.tsx      ← "use client" — expandable park info card
+│       ├── ImageCarousel.tsx        ← "use client" — Embla image carousel
+│       ├── CurrentWeatherSection.tsx ← "use client" — live weather display
+│       ├── EntranceFeesSection.tsx   ← "use client" — collapsible fee list
+│       ├── OperatingHoursSection.tsx ← "use client" — collapsible hours/exceptions
+│       ├── MapStyleSwitcher.tsx      ← "use client" — basemap toggle
+│       ├── ParkSearch.tsx            ← "use client" — search with dropdown
+│       └── ParkTypeFilter.tsx        ← "use client" — type filter with groups
 │
 ├── api/
-│   └── parks/
-│       ├── route.ts              ← GET /api/parks (viewport query)
-│       └── [code]/
-│           └── route.ts          ← GET /api/parks/[code] (detail)
+│   ├── parks/
+│   │   ├── route.ts                 ← GET /api/parks (viewport query)
+│   │   ├── search/
+│   │   │   └── route.ts             ← GET /api/parks/search
+│   │   └── [code]/
+│   │       ├── route.ts             ← GET /api/parks/[code] (detail)
+│   │       └── weather/
+│   │           └── route.ts         ← GET /api/parks/[code]/weather
+│   └── cron/
+│       └── sync-parks/
+│           └── route.ts             ← GET /api/cron/sync-parks (monthly)
 │
 lib/
 ├── db/
-│   └── index.ts                  ← Neon serverless client setup
+│   └── index.ts                     ← Neon serverless client setup
 ├── data/
-│   ├── parks.ts                  ← Read operations (PostGIS queries)
-│   └── nps-api.ts                ← NPS API client (for seed/sync)
+│   ├── parks.ts                     ← Read operations (PostGIS queries)
+│   ├── weather.ts                   ← WeatherAPI.com client
+│   └── nps-api.ts                   ← NPS API client (for seed/sync)
 ├── config/
-│   └── map.ts                    ← Tile provider URLs, default viewport
-├── actions/
-│   └── sync-parks.ts             ← Server Action for monthly re-sync
+│   └── map.ts                       ← Tile URLs, colors, default viewport
+├── constants/
+│   └── national-parks.ts            ← Canonical list of 63 National Park codes
 │
 types/
-├── park.ts                       ← Shared park type definitions
-├── map.ts                        ← Map-related types (viewport, etc.)
+├── park.ts                          ← Park + weather type definitions
+├── map.ts                           ← Map-related types (viewport, etc.)
 │
 scripts/
-├── seed-boundaries.ts            ← Import GeoJSON → PostGIS
-└── seed-details.ts               ← Fetch NPS API → park_details cache
+├── seed-boundaries.ts               ← Import GeoJSON → PostGIS
+└── seed-details.ts                  ← Fetch NPS API → park_details cache
 ```
 
 ---
@@ -312,54 +406,95 @@ export const INITIAL_VIEW_STATE = {
 
 Territories colored by `unit_type` using MapLibre expressions:
 
-| Unit Type                | Fill Color   | Opacity |
-|--------------------------|--------------|---------|
-| National Park            | `#2D6A4F`   | 0.35    |
-| National Monument        | `#D4A843`   | 0.30    |
-| National Historic Site   | `#8B4513`   | 0.25    |
-| National Recreation Area | `#4A90D9`   | 0.30    |
-| National Seashore        | `#1B98C4`   | 0.30    |
-| Other                    | `#6B7280`   | 0.25    |
+| Unit Type                          | Fill Color   | Opacity |
+|------------------------------------|--------------|--------|
+| National Park (+ variants)         | `#2D6A4F`   | 0.35    |
+| National Monument (+ variants)     | `#D4A843`   | 0.30    |
+| National Historic Site / Hist. Park| `#8B4513`   | 0.25    |
+| National Recreation Area           | `#4A90D9`   | 0.30    |
+| National Seashore / Lakeshore      | `#1B98C4`   | 0.30    |
+| National Preserve                  | `#5B8C5A`   | 0.30    |
+| National Memorial                  | `#9B59B6`   | 0.30    |
+| National Military Park / Battlefield| `#C0392B`  | 0.30    |
+| Other                              | `#6B7280`   | 0.25    |
 
 **Hover state:** Fill opacity increases to 0.55, 2px white border appears.
 
 ### 6.3 MapStyleSwitcher
 
-A small toggle button group (shadcn `ToggleGroup`) positioned top-right of the map:
+A button group positioned top-right of the map:
 - **Standard** — OpenFreeMap Liberty (always available)
 - **Outdoors** — Stadia Outdoors (available when `NEXT_PUBLIC_STADIA_API_KEY` is set)
-  - If env var is missing: option is visible but disabled with a tooltip "Stadia API key required"
+  - If env var is missing: option is visible but disabled (gray, cursor-not-allowed)
+
+### 6.4 ParkSearch
+
+A search input positioned on the map with a dropdown results list:
+- Debounced search (250ms) querying `/api/parks/search`
+- Minimum 2 characters to trigger
+- Keyboard navigation (Arrow keys, Enter, Escape)
+- Outside-click detection to close dropdown
+- Selecting a result flies the map to the park and opens the popup
+
+### 6.5 ParkTypeFilter
+
+A filter dropdown that groups ~435 NPS units into 9 categories:
+
+| Group                              | Count |
+|------------------------------------|-------|
+| National Park                      | 63    |
+| National Monument                  | 87    |
+| National Historic Site             | 140   |
+| National Recreation Area           | 18    |
+| National Seashore / Lakeshore      | 13    |
+| National Preserve                  | 13    |
+| National Memorial                  | 31    |
+| National Military Park / Battlefield| 20   |
+| Other                              | 46    |
+
+- Color-coded swatches matching polygon fill colors
+- "Select All" / "Unselect All" toggle
+- Handles dual-designation parks (e.g., "National Park & Preserve") by showing them in both parent groups
+- Ring indicator on the filter button when not all types are enabled
 
 ---
 
 ## 7. ParkDetailPopup Design
 
-A floating card anchored to the clicked polygon, built with shadcn `Card`:
+A floating card anchored to the clicked polygon with scrollable content:
 
 ```
 ┌──────────────────────────────┐
 │  ┌────────────────────────┐  │
-│  │                        │  │   ← Hero image (next/image, 16:9)
-│  │      Park Photo        │  │      from park_details.images[0]
-│  │                        │  │
+│  │    Image Carousel      │  │   ← Embla carousel with dots + arrows
+│  │    (embla-carousel)    │  │      Fallback: 🏞️ emoji if no images
 │  └────────────────────────┘  │
 │                              │
-│  Yosemite National Park      │   ← full_name (semibold, lg)
+│  Yosemite National Park      │   ← full_name (semibold, base)
 │  ┌──────────────┐ CA         │   ← designation badge + state
 │  │ National Park│            │
 │  └──────────────┘            │
 │                              │
-│  Not just a great valley,    │   ← description (2-3 lines, truncated)
-│  Yosemite is a shrine to...  │
+│  ┌ Current Weather ────────┐ │   ← Live weather from WeatherAPI.com
+│  │ ☀️ 72°F  Partly cloudy  │ │      Temp, feels-like, wind, humidity
+│  │ Feels like 70°F         │ │      30-minute cache, graceful fallback
+│  └─────────────────────────┘ │
 │                              │
-│  ┌──────────┐  ╳             │   ← "Visit NPS.gov →" link + close btn
+│  Not just a great valley,    │   ← description (truncated 180 chars)
+│  Yosemite is a shrine to...  │      "See more" / "See less" toggle
+│                              │
+│  ▸ Operating Hours           │   ← Collapsible, day-by-day grid
+│                              │      Handles exceptions, multiple sets
+│  ▸ Entrance Fees             │   ← Collapsible, formatted costs
+│                              │      "Free" for $0 entries
+│  ┌──────────┐                │
+│  │Visit NPS →│               │   ← External link to nps.gov
 │  └──────────┘                │
 └──────────────────────────────┘
 
-Max width: 384px (max-w-sm)
-Shadow: shadow-lg
-Border radius: rounded-xl
-Animation: fade-in + slight scale (animate-in)
+Width: 384px (w-96)
+Max height: 55vh (scrollable content area)
+Shadow: shadow
 ```
 
 ---
@@ -394,7 +529,17 @@ Animation: fade-in + slight scale (animate-in)
 | Park boundaries   | `nps_boundary.geojson` | `park_boundaries`   | Manual (data rarely changes) |
 | Park details      | NPS API `/parks` | `park_details`      | Monthly (Vercel Cron) |
 | Simplified geom   | PostGIS query    | None (computed)     | Per-request via `ST_Simplify` |
+| Current weather   | WeatherAPI.com   | Server fetch cache  | 30 min (`revalidate: 1800`) |
 | Map tiles         | OpenFreeMap / Stadia | Browser cache    | Managed by tile provider |
+
+**HTTP Cache-Control Headers:**
+
+| Endpoint               | Client (`max-age`) | CDN (`s-maxage`) |
+|------------------------|--------------------|------------------|
+| `/api/parks`           | 5 min              | 10 min           |
+| `/api/parks/[code]`    | 1 hour             | 24 hours         |
+| `/api/parks/[code]/weather` | 30 min        | 30 min           |
+| `/api/parks/search`    | 1 min              | 2 min            |
 
 ### Monthly Sync (Vercel Cron)
 
@@ -416,8 +561,9 @@ The cron endpoint calls the same logic as `seed-details.ts` but as a Route Handl
 
 | Variable                       | Required | Where          | Description                         |
 |--------------------------------|----------|----------------|-------------------------------------|
-| `DATABASE_URL`                 | Yes      | `.env.local`   | Neon connection string (from MCP)   |
+| `DATABASE_URL`                 | Yes      | `.env.local`   | Neon PostgreSQL connection string   |
 | `NPS_API_KEY`                  | Yes      | `.env.local`   | NPS Developer API key               |
+| `WEATHER_API_KEY`              | No       | `.env.local`   | WeatherAPI.com key (live weather)   |
 | `NEXT_PUBLIC_STADIA_API_KEY`   | No       | `.env.local`   | Stadia Maps key (Outdoors basemap)  |
 | `CRON_SECRET`                  | Yes      | Vercel only    | Protects the monthly sync endpoint  |
 
@@ -427,12 +573,15 @@ The cron endpoint calls the same logic as `seed-details.ts` but as a Route Handl
 
 | Package                    | Purpose                              |
 |----------------------------|--------------------------------------|
+| `next` 16                  | React framework (App Router)         |
+| `react` 19                 | UI library                           |
 | `react-map-gl`             | React wrapper for MapLibre GL JS     |
 | `maplibre-gl`              | WebGL map rendering engine           |
 | `@neondatabase/serverless` | Neon serverless Postgres driver      |
-| `next`                     | React framework (App Router)         |
-| `tailwindcss`              | Utility-first CSS                    |
-| `@radix-ui/*` (via shadcn) | Accessible UI primitives             |
+| `tailwindcss` v4           | Utility-first CSS                    |
+| `embla-carousel-react`     | Image carousel for park popup        |
+| `lucide-react`             | Icon library                         |
+| `@vercel/analytics`        | Vercel Web Analytics                 |
 
 ---
 
@@ -442,11 +591,14 @@ The cron endpoint calls the same logic as `seed-details.ts` but as a Route Handl
 - [ ] Connect repo to Vercel
 - [ ] Add `DATABASE_URL` env var (Neon connection string)
 - [ ] Add `NPS_API_KEY` env var
-- [ ] Optionally add `NEXT_PUBLIC_STADIA_API_KEY`
 - [ ] Add `CRON_SECRET` env var
-- [ ] Run seed scripts locally before first deploy
+- [ ] Optionally add `WEATHER_API_KEY` for live weather
+- [ ] Optionally add `NEXT_PUBLIC_STADIA_API_KEY` for Outdoors basemap
+- [ ] Run seed scripts locally before first deploy (`pnpm seed`)
 - [ ] Verify map loads with OpenFreeMap tiles
-- [ ] Verify popup loads park details from cache
+- [ ] Verify popup loads park details with carousel
+- [ ] Verify search and type filtering work
+- [ ] Verify weather section loads (if key is set)
 - [ ] Verify Stadia Outdoors toggle (if key is set)
 
 ---
@@ -454,7 +606,7 @@ The cron endpoint calls the same logic as `seed-details.ts` but as a Route Handl
 ## 13. Future Enhancements
 
 - **Vector tiles via Martin** — Serve boundaries directly from PostGIS as MVT tiles for automatic viewport-based loading (eliminates `/api/parks` route)
-- **Search / filter** — Filter parks by `unit_type`, state, or activity
-- **Park detail page** — `/park/[parkCode]` with full information, photo gallery, operating hours
+- **State / activity filtering** — Filter parks by state or activity in addition to type
+- **Park detail page** — `/park/[parkCode]` with full information, extended photo gallery
 - **Campground / visitor center layers** — Additional NPS API data overlays
 - **Offline / PWA** — Cache tiles and park data for offline use in the field

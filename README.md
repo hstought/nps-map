@@ -1,12 +1,21 @@
 # NPS Map
 
-An interactive web map displaying the boundaries of all National Park Service (NPS) units across the United States. Users can pan, zoom, and click on any park to view details and photos.
+An interactive web map displaying the boundaries of all ~435 National Park Service (NPS) units across the United States. Users can pan, zoom, search, filter by type, and click on any park to view details, photos, live weather, entrance fees, and operating hours.
 
 **Demo:** https://nps-map.vercel.app/
 
+## Features
+
+- **Interactive map** — Pan, zoom, and click park boundaries rendered with MapLibre GL JS
+- **Park detail popup** — Image carousel, description, live weather, operating hours, entrance fees
+- **Park search** — Debounced search with keyboard navigation and fly-to selection
+- **Type filtering** — Filter ~435 NPS units across 9 categories (National Parks, Monuments, Historic Sites, etc.)
+- **Basemap switching** — Toggle between Standard (OpenFreeMap) and Outdoors (Stadia Maps)
+- **Automatic data sync** — Monthly Vercel Cron job refreshes cached park metadata from the NPS API
+
 ## Tech Stack
 
-- [Next.js](https://nextjs.org) (App Router)
+- [Next.js](https://nextjs.org) 16 (App Router)
 - [React](https://react.dev) 19
 - [TypeScript](https://www.typescriptlang.org)
 - [Tailwind CSS](https://tailwindcss.com) v4
@@ -32,12 +41,19 @@ pnpm install
 
 ### Environment Variables
 
-Create a `.env.local` file at the project root with your database connection string and NPS API key:
+Copy the example env file and fill in your values:
 
+```bash
+cp .env.example .env.local
 ```
-DATABASE_URL=your_neon_connection_string
-NPS_API_KEY=your_nps_api_key
-```
+
+| Variable                     | Required | Description                                   |
+|------------------------------|----------|-----------------------------------------------|
+| `DATABASE_URL`               | Yes      | Neon PostgreSQL connection string              |
+| `NPS_API_KEY`                | Yes      | [NPS Developer API](https://www.nps.gov/subjects/developer/get-started.htm) key |
+| `WEATHER_API_KEY`            | No       | [WeatherAPI.com](https://www.weatherapi.com/) key for live weather in popups |
+| `NEXT_PUBLIC_STADIA_API_KEY` | No       | [Stadia Maps](https://stadiamaps.com/) key for the Outdoors basemap |
+| `CRON_SECRET`                | No       | Protects the `/api/cron/sync-parks` endpoint (required on Vercel) |
 
 ### Seed the Database
 
@@ -47,7 +63,7 @@ Load park boundaries and details into your Neon database:
 pnpm seed
 ```
 
-This runs two scripts in sequence: `seed:boundaries` (loads GeoJSON boundary data) and `seed:details` (fetches and caches park metadata from the NPS API).
+This runs two scripts in sequence: `seed:boundaries` (loads GeoJSON boundary data into PostGIS) and `seed:details` (fetches and caches park metadata from the NPS API).
 
 ### Run the Dev Server
 
@@ -57,46 +73,56 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-## Architecture
-
-The project groups code by feature and separates concerns between UI, data access, and database logic. Key folders:
+## Project Structure
 
 ```
 src/
-├── app/                       # Next.js App Router pages and layouts
-│   ├── (map)/                 # Map feature route group
-│   │   └── _components/       # Map UI components (client)
-│   │       ├── MapContainer.tsx
-│   │       ├── MapView.tsx
-│   │       ├── MapStyleSwitcher.tsx
-│   │       └── ParkDetailPopup.tsx
-│   └── api/                   # API routes
-│       ├── parks/             # Park data endpoints
-│       │   └── [code]/        # Single park by unit code
-│       └── cron/sync-parks/   # Scheduled data sync
+├── app/                          # Next.js App Router pages and layouts
+│   ├── (map)/                    # Map feature route group
+│   │   └── _components/          # Map UI components (client)
+│   │       ├── MapContainer.tsx       # next/dynamic wrapper (ssr: false)
+│   │       ├── MapView.tsx            # Main interactive map
+│   │       ├── ParkDetailPopup.tsx    # Expandable park info card
+│   │       ├── ImageCarousel.tsx      # Embla image carousel
+│   │       ├── CurrentWeatherSection.tsx  # Live weather display
+│   │       ├── EntranceFeesSection.tsx    # Collapsible fee list
+│   │       ├── OperatingHoursSection.tsx  # Collapsible hours/exceptions
+│   │       ├── MapStyleSwitcher.tsx   # Basemap toggle
+│   │       ├── ParkSearch.tsx         # Search with dropdown
+│   │       └── ParkTypeFilter.tsx     # Type filter with groups
+│   └── api/                      # API routes
+│       ├── parks/                # Park data endpoints
+│       │   ├── search/           # Name search
+│       │   └── [code]/           # Single park detail + weather
+│       └── cron/sync-parks/      # Monthly data sync
 ├── lib/
-│   ├── config/                # App configuration
-│   │   └── map.ts             # Map settings and defaults
-│   ├── data/                  # Data access layer
-│   │   ├── parks.ts           # Park query functions (PostGIS)
-│   │   └── nps-api.ts         # NPS API client
-│   └── db/                    # Database connection
-│       └── index.ts           # Neon serverless client
-├── types/                     # Shared TypeScript types
-│   ├── park.ts                # Park domain types
-│   └── map.ts                 # Map-related types
-scripts/                       # Database seed scripts
-├── seed-boundaries.ts         # Load GeoJSON into PostGIS
-└── seed-details.ts            # Cache NPS API metadata
-docs/                          # Project documentation
+│   ├── config/map.ts             # Tile URLs, colors, default viewport
+│   ├── constants/national-parks.ts  # Canonical 63 National Park codes
+│   ├── data/                     # Data access layer
+│   │   ├── parks.ts              # Park boundary + detail queries (PostGIS)
+│   │   ├── weather.ts            # WeatherAPI.com client
+│   │   └── nps-api.ts            # NPS API client (seed/sync)
+│   └── db/index.ts               # Neon serverless client
+├── types/                        # Shared TypeScript types
+│   ├── park.ts                   # Park, weather, and search types
+│   └── map.ts                    # Map viewport and style types
+scripts/                          # Database seed scripts
+├── seed-boundaries.ts            # Load GeoJSON into PostGIS
+└── seed-details.ts               # Cache NPS API metadata
+docs/                             # Project documentation
+└── architecture.md               # Full architecture reference
 ```
 
 ### Data Flow
 
-1. **Seed Scripts** - Load park boundary GeoJSON and NPS API metadata into a Neon PostGIS database
-2. **API Routes** (`/api/parks`) - Query PostGIS for boundaries and park details
-3. **Data Layer** (`lib/data/`) - Typed data access functions for all database and API calls
-4. **Components** - Consume data via props, never fetch or query directly
+1. **Seed Scripts** — Load park boundary GeoJSON and NPS API metadata into a Neon PostGIS database
+2. **API Routes** — Query PostGIS for boundaries (`/api/parks`), details (`/api/parks/[code]`), search (`/api/parks/search`), and weather (`/api/parks/[code]/weather`)
+3. **Data Layer** (`lib/data/`) — Typed data access functions for all database and external API calls
+4. **Components** — Consume data via API fetch calls, never query the database directly
+
+## Documentation
+
+See [docs/architecture.md](docs/architecture.md) for the full architecture reference including database schema, API specifications, component tree, caching strategy, and deployment checklist.
 
 ## Available Scripts
 
