@@ -49,7 +49,7 @@ export function CurrentWeatherSection({ unitCode }: CurrentWeatherSectionProps) 
     <div className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-blue-50 to-sky-50 px-3 py-2">
       {/* Left: icon + temp + feels like stacked */}
       <div className="flex items-center gap-1.5">
-        {/* biome-ignore lint/nursery/noImgElement: WeatherAPI CDN icon, no need for Next Image optimization */}
+        {/* biome-ignore lint: WeatherAPI CDN icon, no need for Next Image optimization */}
         <img
           src={weather.conditionIcon}
           alt={weather.conditionText}

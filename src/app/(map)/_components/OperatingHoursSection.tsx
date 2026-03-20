@@ -108,8 +108,8 @@ export function OperatingHoursSection({
                   <p className="mb-1 text-[10px] font-medium text-amber-700">
                     Exceptions
                   </p>
-                  {unique.map((exception, i) => (
-                    <div key={`${exception.name}-${exception.startDate}-${i}`} className="mb-1 last:mb-0">
+                  {unique.map((exception) => (
+                    <div key={`${exception.name}-${exception.startDate}-${exception.endDate}`} className="mb-1 last:mb-0">
                       <p className="text-[10px] font-medium text-gray-600">
                         {exception.name}
                       </p>
