@@ -14,6 +14,37 @@ function formatCost(cost: string): string {
   return `$${num.toFixed(2)}`;
 }
 
+function FeeItem({ fee }: { fee: ParkEntranceFee }) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => fee.description && setShowDetails((prev) => !prev)}
+          className={`text-left text-[11px] font-medium text-gray-700 ${fee.description ? "cursor-pointer hover:text-gray-900" : ""}`}
+        >
+          {fee.title}
+          {fee.description && (
+            <ChevronDown
+              className={`ml-0.5 inline h-2.5 w-2.5 text-gray-400 transition-transform ${showDetails ? "rotate-180" : ""}`}
+            />
+          )}
+        </button>
+        <span className="shrink-0 text-[11px] font-semibold text-green-700">
+          {formatCost(fee.cost)}
+        </span>
+      </div>
+      {showDetails && fee.description && (
+        <p className="text-[10px] leading-relaxed text-gray-500">
+          {fee.description}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function EntranceFeesSection({
   entranceFees,
 }: EntranceFeesSectionProps) {
@@ -45,22 +76,8 @@ export function EntranceFeesSection({
 
       {isOpen && (
         <div className="flex flex-col gap-2 border-t border-gray-100 px-3 py-2">
-          {entranceFees.map((fee) => (
-            <div key={fee.title} className="flex flex-col gap-0.5">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[11px] font-medium text-gray-700">
-                  {fee.title}
-                </span>
-                <span className="shrink-0 text-[11px] font-semibold text-green-700">
-                  {formatCost(fee.cost)}
-                </span>
-              </div>
-              {fee.description && (
-                <p className="text-[10px] leading-relaxed text-gray-500">
-                  {fee.description}
-                </p>
-              )}
-            </div>
+          {entranceFees.map((fee, index) => (
+            <FeeItem key={`${fee.title}-${index}`} fee={fee} />
           ))}
         </div>
       )}
