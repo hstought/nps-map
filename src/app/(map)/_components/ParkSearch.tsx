@@ -54,7 +54,7 @@ export function ParkSearch({ onSelectPark }: ParkSearchProps) {
         if (!response.ok) throw new Error("Search failed");
         const data: ParkSearchResult[] = await response.json();
         setResults(data);
-        setIsOpen(data.length > 0);
+        setIsOpen(true);
       } catch (error) {
         console.error("Park search error:", error);
         setResults([]);
