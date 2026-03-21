@@ -44,9 +44,7 @@ const variedHours: ParkOperatingHours = {
 
 describe("OperatingHoursSection", () => {
   it("renders nothing when operating hours array is empty", () => {
-    const { container } = render(
-      <OperatingHoursSection operatingHours={[]} />,
-    );
+    const { container } = render(<OperatingHoursSection operatingHours={[]} />);
     expect(container.firstChild).toBeNull();
   });
 
@@ -124,9 +122,7 @@ describe("OperatingHoursSection", () => {
       ],
     };
 
-    render(
-      <OperatingHoursSection operatingHours={[duplicatedExceptions]} />,
-    );
+    render(<OperatingHoursSection operatingHours={[duplicatedExceptions]} />);
 
     fireEvent.click(screen.getByText("Operating Hours"));
 

@@ -9,20 +9,14 @@ export async function GET(
   const { code } = await params;
 
   if (!code) {
-    return NextResponse.json(
-      { error: "Missing park code" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Missing park code" }, { status: 400 });
   }
 
   try {
     const detail = await getParkDetail(code.toUpperCase());
 
     if (!detail) {
-      return NextResponse.json(
-        { error: "Park not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Park not found" }, { status: 404 });
     }
 
     if (!detail.latitude || !detail.longitude) {

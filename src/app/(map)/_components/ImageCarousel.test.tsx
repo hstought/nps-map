@@ -105,9 +105,7 @@ describe("ImageCarousel", () => {
 
     render(<ImageCarousel images={images} parkName="Yellowstone" />);
 
-    expect(
-      screen.getByAltText("Yellowstone photo 2"),
-    ).toBeInTheDocument();
+    expect(screen.getByAltText("Yellowstone photo 2")).toBeInTheDocument();
   });
 
   it("renders dot indicators for multiple images", () => {

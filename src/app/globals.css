@@ -53,7 +53,9 @@ body {
   justify-content: center !important;
   box-shadow: none !important;
   border: none !important;
-  transition: background 0.15s, color 0.15s !important;
+  transition:
+    background 0.15s,
+    color 0.15s !important;
   line-height: 1 !important;
 }
 

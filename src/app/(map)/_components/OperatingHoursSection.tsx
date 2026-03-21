@@ -78,7 +78,7 @@ export function OperatingHoursSection({
               hours: formatHours(primaryHours.standardHours?.[day] ?? ""),
             }));
             const allSame = formattedHours.every(
-              (d) => d.hours === formattedHours[0].hours
+              (d) => d.hours === formattedHours[0].hours,
             );
 
             if (allSame && formattedHours[0].hours) {
@@ -132,7 +132,10 @@ export function OperatingHoursSection({
                     Exceptions
                   </p>
                   {unique.map((exception) => (
-                    <div key={`${exception.name}-${exception.startDate}-${exception.endDate}`} className="mb-1 last:mb-0">
+                    <div
+                      key={`${exception.name}-${exception.startDate}-${exception.endDate}`}
+                      className="mb-1 last:mb-0"
+                    >
                       <p className="text-[10px] font-medium text-gray-600">
                         {exception.name}
                       </p>

@@ -35,9 +35,7 @@ export function createMockParkDetail(
   };
 }
 
-export function createMockImage(
-  overrides: Partial<ParkImage> = {},
-): ParkImage {
+export function createMockImage(overrides: Partial<ParkImage> = {}): ParkImage {
   return {
     url: "https://www.nps.gov/common/uploads/structured_data/photo.jpg",
     credit: "NPS Photo",

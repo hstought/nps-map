@@ -91,10 +91,7 @@ describe("CurrentWeatherSection", () => {
     await waitFor(() => {
       const img = screen.getByAltText("Partly cloudy");
       expect(img).toBeInTheDocument();
-      expect(img).toHaveAttribute(
-        "src",
-        "https://cdn.weatherapi.com/icon.png",
-      );
+      expect(img).toHaveAttribute("src", "https://cdn.weatherapi.com/icon.png");
     });
   });
 

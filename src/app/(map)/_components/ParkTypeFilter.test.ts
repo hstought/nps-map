@@ -35,9 +35,7 @@ describe("isTypeEnabled", () => {
   describe("direct type matching", () => {
     it("returns true when unitType is in the enabled set", () => {
       const enabled = new Set(["National Park"]);
-      expect(isTypeEnabled("National Park", "Yellowstone", enabled)).toBe(
-        true,
-      );
+      expect(isTypeEnabled("National Park", "Yellowstone", enabled)).toBe(true);
     });
 
     it("returns false when unitType is not in the enabled set", () => {
@@ -80,9 +78,7 @@ describe("isTypeEnabled", () => {
 
     it("shows parks via National Parks (plural) filter", () => {
       const enabled = new Set(["National Parks"]);
-      expect(
-        isTypeEnabled("Other Type", "Denali", enabled, "DENA"),
-      ).toBe(true);
+      expect(isTypeEnabled("Other Type", "Denali", enabled, "DENA")).toBe(true);
     });
 
     it("does not override for non-official park codes", () => {
@@ -126,13 +122,9 @@ describe("isTypeEnabled", () => {
 
     it("does not match unrelated park names", () => {
       const enabled = new Set(["National Preserve"]);
-      expect(
-        isTypeEnabled(
-          "Other",
-          "Acadia National Park",
-          enabled,
-        ),
-      ).toBe(false);
+      expect(isTypeEnabled("Other", "Acadia National Park", enabled)).toBe(
+        false,
+      );
     });
   });
 
@@ -141,19 +133,17 @@ describe("isTypeEnabled", () => {
       expect(isTypeEnabled("National Park", "Test Park", allEnabled)).toBe(
         true,
       );
-      expect(isTypeEnabled("National Monument", "Test", allEnabled)).toBe(
+      expect(isTypeEnabled("National Monument", "Test", allEnabled)).toBe(true);
+      expect(isTypeEnabled("National Historic Site", "Test", allEnabled)).toBe(
         true,
       );
-      expect(
-        isTypeEnabled("National Historic Site", "Test", allEnabled),
-      ).toBe(true);
     });
 
     it("returns true for null/unknown types (via __other__)", () => {
       expect(isTypeEnabled(null, "Test", allEnabled)).toBe(true);
-      expect(
-        isTypeEnabled("National Scenic Trail", "Test", allEnabled),
-      ).toBe(true);
+      expect(isTypeEnabled("National Scenic Trail", "Test", allEnabled)).toBe(
+        true,
+      );
     });
   });
 

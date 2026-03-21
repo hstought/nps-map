@@ -100,7 +100,7 @@ export function ImageCarousel({ images, parkName }: ImageCarouselProps) {
             imageErrors.has(index) ? null : (
               <div
                 className="embla__slide relative h-full min-w-0 flex-[0_0_100%]"
-                key={`${img.url}-${index}`}
+                key={img.url}
               >
                 <Image
                   src={img.url}

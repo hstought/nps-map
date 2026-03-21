@@ -6,8 +6,8 @@ vi.mock("@/lib/data/parks", () => ({
   getParkDetail: vi.fn(),
 }));
 
-import { getParkDetail } from "@/lib/data/parks";
 import { GET } from "@/app/api/parks/[code]/route";
+import { getParkDetail } from "@/lib/data/parks";
 
 const mockGetParkDetail = vi.mocked(getParkDetail);
 

@@ -8,9 +8,9 @@ vi.mock("@/lib/data/parks", () => ({
   upsertParkDetails: vi.fn(),
 }));
 
+import { GET } from "@/app/api/cron/sync-parks/route";
 import { fetchAllParksFromNpsApi } from "@/lib/data/nps-api";
 import { upsertParkDetails } from "@/lib/data/parks";
-import { GET } from "@/app/api/cron/sync-parks/route";
 
 const mockFetchAllParks = vi.mocked(fetchAllParksFromNpsApi);
 const mockUpsertParkDetails = vi.mocked(upsertParkDetails);

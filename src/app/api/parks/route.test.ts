@@ -8,8 +8,8 @@ vi.mock("@/lib/data/parks", () => ({
   isMemoryError: vi.fn(),
 }));
 
-import { getParkBoundaries, isMemoryError } from "@/lib/data/parks";
 import { GET } from "@/app/api/parks/route";
+import { getParkBoundaries, isMemoryError } from "@/lib/data/parks";
 
 const mockGetParkBoundaries = vi.mocked(getParkBoundaries);
 const mockIsMemoryError = vi.mocked(isMemoryError);

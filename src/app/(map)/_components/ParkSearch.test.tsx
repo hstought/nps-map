@@ -94,9 +94,7 @@ describe("ParkSearch", () => {
     await vi.advanceTimersByTimeAsync(300);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Yellowstone National Park"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Yellowstone National Park")).toBeInTheDocument();
       expect(screen.getByText("Yosemite National Park")).toBeInTheDocument();
     });
   });
@@ -114,9 +112,7 @@ describe("ParkSearch", () => {
     await vi.advanceTimersByTimeAsync(300);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Yellowstone National Park"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Yellowstone National Park")).toBeInTheDocument();
     });
 
     await userEvent.click(screen.getByText("Yellowstone National Park"));
@@ -137,9 +133,7 @@ describe("ParkSearch", () => {
     await vi.advanceTimersByTimeAsync(300);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Yellowstone National Park"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Yellowstone National Park")).toBeInTheDocument();
     });
 
     await userEvent.click(screen.getByText("Yellowstone National Park"));
@@ -217,9 +211,7 @@ describe("ParkSearch", () => {
     await vi.advanceTimersByTimeAsync(300);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Yellowstone National Park"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Yellowstone National Park")).toBeInTheDocument();
     });
 
     await userEvent.keyboard("{ArrowDown}");
@@ -241,9 +233,7 @@ describe("ParkSearch", () => {
     await vi.advanceTimersByTimeAsync(300);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Yellowstone National Park"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Yellowstone National Park")).toBeInTheDocument();
     });
 
     await userEvent.keyboard("{Escape}");

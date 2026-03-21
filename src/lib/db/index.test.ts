@@ -10,7 +10,9 @@ describe("getDb", () => {
     const original = process.env.DATABASE_URL;
     delete process.env.DATABASE_URL;
 
-    expect(() => getDb()).toThrow("DATABASE_URL environment variable is not set");
+    expect(() => getDb()).toThrow(
+      "DATABASE_URL environment variable is not set",
+    );
 
     process.env.DATABASE_URL = original;
   });

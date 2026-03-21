@@ -8,7 +8,9 @@ interface CurrentWeatherSectionProps {
   unitCode: string;
 }
 
-export function CurrentWeatherSection({ unitCode }: CurrentWeatherSectionProps) {
+export function CurrentWeatherSection({
+  unitCode,
+}: CurrentWeatherSectionProps) {
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

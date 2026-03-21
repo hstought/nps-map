@@ -22,9 +22,7 @@ describe("ErrorPage", () => {
     render(<ErrorPage error={error as any} reset={mockReset} />);
 
     expect(
-      screen.getByText(
-        "An unexpected error occurred while loading the map.",
-      ),
+      screen.getByText("An unexpected error occurred while loading the map."),
     ).toBeInTheDocument();
   });
 

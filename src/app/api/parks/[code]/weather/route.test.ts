@@ -9,9 +9,9 @@ vi.mock("@/lib/data/weather", () => ({
   getCurrentWeather: vi.fn(),
 }));
 
+import { GET } from "@/app/api/parks/[code]/weather/route";
 import { getParkDetail } from "@/lib/data/parks";
 import { getCurrentWeather } from "@/lib/data/weather";
-import { GET } from "@/app/api/parks/[code]/weather/route";
 
 const mockGetParkDetail = vi.mocked(getParkDetail);
 const mockGetCurrentWeather = vi.mocked(getCurrentWeather);

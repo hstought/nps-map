@@ -1,9 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  createMockNpsApiPark,
-  createMockParkDetail,
-  createMockSearchResult,
-} from "@/test/fixtures";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMockNpsApiPark } from "@/test/fixtures";
 
 // Mock the database module
 const mockSql = vi.fn();
@@ -80,7 +76,16 @@ describe("getParkBoundaries", () => {
         region: "Mountain",
         geojson: JSON.stringify({
           type: "MultiPolygon",
-          coordinates: [[[[-110, 44], [-110, 45], [-111, 45], [-110, 44]]]],
+          coordinates: [
+            [
+              [
+                [-110, 44],
+                [-110, 45],
+                [-111, 45],
+                [-110, 44],
+              ],
+            ],
+          ],
         }),
       },
     ]);
@@ -124,9 +129,7 @@ describe("getParkBoundaries", () => {
     const result = await getParkBoundaries(bbox, 5);
 
     expect(result.features).toHaveLength(1);
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("OOM"),
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("OOM"));
     consoleSpy.mockRestore();
   });
 
@@ -205,10 +208,20 @@ describe("getParkDetail", () => {
         weather_info: "Cold winters",
         latitude: 44.6,
         longitude: -110.5,
-        images: [{ url: "photo.jpg", credit: "NPS", title: "Photo", altText: "Alt", caption: "Cap" }],
+        images: [
+          {
+            url: "photo.jpg",
+            credit: "NPS",
+            title: "Photo",
+            altText: "Alt",
+            caption: "Cap",
+          },
+        ],
         activities: [{ id: "1", name: "Hiking" }],
         topics: [{ id: "1", name: "Geysers" }],
-        entrance_fees: [{ cost: "35.00", description: "Desc", title: "Vehicle" }],
+        entrance_fees: [
+          { cost: "35.00", description: "Desc", title: "Vehicle" },
+        ],
         operating_hours: [
           {
             name: "General",

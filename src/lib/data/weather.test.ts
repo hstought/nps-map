@@ -42,8 +42,7 @@ describe("getCurrentWeather", () => {
       tempF: 72,
       feelsLikeF: 70,
       conditionText: "Sunny",
-      conditionIcon:
-        "https://cdn.weatherapi.com/weather/64x64/day/113.png",
+      conditionIcon: "https://cdn.weatherapi.com/weather/64x64/day/113.png",
       humidity: 30,
       windMph: 8,
       windDir: "NW",
