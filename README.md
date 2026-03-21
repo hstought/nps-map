@@ -10,7 +10,6 @@ An interactive web map displaying the boundaries of all ~435 National Park Servi
 - **Park detail popup** — Image carousel, description, live weather, operating hours, entrance fees
 - **Park search** — Debounced search with keyboard navigation and fly-to selection
 - **Type filtering** — Filter ~435 NPS units across 9 categories (National Parks, Monuments, Historic Sites, etc.)
-- **Basemap switching** — Toggle between Standard (OpenFreeMap) and Outdoors (Stadia Maps)
 - **Automatic data sync** — Monthly Vercel Cron job refreshes cached park metadata from the NPS API
 
 ## Tech Stack
@@ -52,7 +51,6 @@ cp .env.example .env.local
 | `DATABASE_URL`               | Yes      | Neon PostgreSQL connection string              |
 | `NPS_API_KEY`                | Yes      | [NPS Developer API](https://www.nps.gov/subjects/developer/get-started.htm) key |
 | `WEATHER_API_KEY`            | No       | [WeatherAPI.com](https://www.weatherapi.com/) key for live weather in popups |
-| `NEXT_PUBLIC_STADIA_API_KEY` | No       | [Stadia Maps](https://stadiamaps.com/) key for the Outdoors basemap |
 | `CRON_SECRET`                | No       | Protects the `/api/cron/sync-parks` endpoint (required on Vercel) |
 
 ### Seed the Database
@@ -87,7 +85,6 @@ src/
 │   │       ├── CurrentWeatherSection.tsx  # Live weather display
 │   │       ├── EntranceFeesSection.tsx    # Collapsible fee list
 │   │       ├── OperatingHoursSection.tsx  # Collapsible hours/exceptions
-│   │       ├── MapStyleSwitcher.tsx   # Basemap toggle
 │   │       ├── ParkSearch.tsx         # Search with dropdown
 │   │       └── ParkTypeFilter.tsx     # Type filter with groups
 │   └── api/                      # API routes

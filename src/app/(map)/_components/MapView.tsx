@@ -17,17 +17,15 @@ import MapGL, {
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   DEFAULT_UNIT_COLOR,
-  getStyleUrl,
   INITIAL_VIEW_STATE,
+  MAP_STYLE_URL,
   UNIT_TYPE_COLORS,
 } from "@/lib/config/map";
-import type { MapStyleKey } from "@/types/map";
 import type {
   ParkBoundaryCollection,
   ParkBoundaryProperties,
   ParkSearchResult,
 } from "@/types/park";
-import { MapStyleSwitcher } from "./MapStyleSwitcher";
 import { ParkDetailPopup } from "./ParkDetailPopup";
 import { ParkSearch } from "./ParkSearch";
 import {
@@ -83,7 +81,6 @@ export function MapView() {
     latitude: number;
   } | null>(null);
   const [hoveredFeatureId, setHoveredFeatureId] = useState<string | null>(null);
-  const [currentStyle, setCurrentStyle] = useState<MapStyleKey>("liberty");
   const [isLoading, setIsLoading] = useState(false);
   const [enabledTypes, setEnabledTypes] =
     useState<Set<string>>(buildAllEnabledTypes);
@@ -203,9 +200,6 @@ export function MapView() {
     map.getCanvas().style.cursor = "";
   }, [hoveredFeatureId]);
 
-  // Resolve the current map style URL
-  const styleUrl = getStyleUrl(currentStyle) ?? getStyleUrl("liberty") ?? "";
-
   // Toggle an entire type group on/off
   const handleToggleGroup = useCallback((types: string[], enabled: boolean) => {
     setEnabledTypes((prev) => {
@@ -261,7 +255,7 @@ export function MapView() {
         ref={mapRef}
         initialViewState={INITIAL_VIEW_STATE}
         style={{ width: "100%", height: "100%" }}
-        mapStyle={styleUrl}
+        mapStyle={MAP_STYLE_URL}
         onMoveEnd={handleMoveEnd}
         onClick={handleClick}
         onMouseMove={handleMouseMove}
@@ -310,12 +304,6 @@ export function MapView() {
         />
         <ParkSearch onSelectPark={handleParkSearchSelect} />
       </div>
-
-      {/* Map style switcher */}
-      <MapStyleSwitcher
-        currentStyle={currentStyle}
-        onStyleChange={setCurrentStyle}
-      />
 
       {/* Loading indicator */}
       {isLoading && (

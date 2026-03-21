@@ -76,8 +76,8 @@ export function EntranceFeesSection({
 
       {isOpen && (
         <div className="flex flex-col gap-2 border-t border-gray-100 px-3 py-2">
-          {entranceFees.map((fee, index) => (
-            <FeeItem key={`${fee.title}-${index}`} fee={fee} />
+          {entranceFees.map((fee) => (
+            <FeeItem key={`${fee.title}-${fee.cost}-${fee.description}`} fee={fee} />
           ))}
         </div>
       )}

@@ -49,7 +49,6 @@ An interactive web map displaying the boundaries of all ~435 National Park Servi
                                                   │  ParkDetailPopup      │
                                                   │  ParkSearch           │
                                                   │  ParkTypeFilter       │
-                                                  │  MapStyleSwitcher     │
                                                   └───────────────────────┘
 ```
 
@@ -332,7 +331,6 @@ app/
 │       ├── CurrentWeatherSection.tsx ← "use client" — live weather display
 │       ├── EntranceFeesSection.tsx   ← "use client" — collapsible fee list
 │       ├── OperatingHoursSection.tsx ← "use client" — collapsible hours/exceptions
-│       ├── MapStyleSwitcher.tsx      ← "use client" — basemap toggle
 │       ├── ParkSearch.tsx            ← "use client" — search with dropdown
 │       └── ParkTypeFilter.tsx        ← "use client" — type filter with groups
 │
@@ -379,21 +377,7 @@ scripts/
 ```typescript
 // lib/config/map.ts
 
-export const MAP_STYLES = {
-  liberty: {
-    name: "Standard",
-    url: "https://tiles.openfreemap.org/styles/liberty",
-    requiresApiKey: false,
-  },
-  outdoors: {
-    name: "Outdoors",
-    url: "https://tiles.stadiamaps.com/styles/outdoors.json",
-    requiresApiKey: true,
-    apiKeyEnvVar: "NEXT_PUBLIC_STADIA_API_KEY",
-  },
-} as const;
-
-export const DEFAULT_STYLE = "liberty";
+export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
 export const INITIAL_VIEW_STATE = {
   longitude: -98.5,
@@ -420,14 +404,7 @@ Territories colored by `unit_type` using MapLibre expressions:
 
 **Hover state:** Fill opacity increases to 0.55, 2px white border appears.
 
-### 6.3 MapStyleSwitcher
-
-A button group positioned top-right of the map:
-- **Standard** — OpenFreeMap Liberty (always available)
-- **Outdoors** — Stadia Outdoors (available when `NEXT_PUBLIC_STADIA_API_KEY` is set)
-  - If env var is missing: option is visible but disabled (gray, cursor-not-allowed)
-
-### 6.4 ParkSearch
+### 6.3 ParkSearch
 
 A search input positioned on the map with a dropdown results list:
 - Debounced search (250ms) querying `/api/parks/search`
@@ -436,7 +413,7 @@ A search input positioned on the map with a dropdown results list:
 - Outside-click detection to close dropdown
 - Selecting a result flies the map to the park and opens the popup
 
-### 6.5 ParkTypeFilter
+### 6.4 ParkTypeFilter
 
 A filter dropdown that groups ~435 NPS units into 9 categories:
 
@@ -530,7 +507,7 @@ Shadow: shadow
 | Park details      | NPS API `/parks` | `park_details`      | Monthly (Vercel Cron) |
 | Simplified geom   | PostGIS query    | None (computed)     | Per-request via `ST_Simplify` |
 | Current weather   | WeatherAPI.com   | Server fetch cache  | 30 min (`revalidate: 1800`) |
-| Map tiles         | OpenFreeMap / Stadia | Browser cache    | Managed by tile provider |
+| Map tiles         | OpenFreeMap          | Browser cache    | Managed by tile provider |
 
 **HTTP Cache-Control Headers:**
 
@@ -564,7 +541,6 @@ The cron endpoint calls the same logic as `seed-details.ts` but as a Route Handl
 | `DATABASE_URL`                 | Yes      | `.env.local`   | Neon PostgreSQL connection string   |
 | `NPS_API_KEY`                  | Yes      | `.env.local`   | NPS Developer API key               |
 | `WEATHER_API_KEY`              | No       | `.env.local`   | WeatherAPI.com key (live weather)   |
-| `NEXT_PUBLIC_STADIA_API_KEY`   | No       | `.env.local`   | Stadia Maps key (Outdoors basemap)  |
 | `CRON_SECRET`                  | Yes      | Vercel only    | Protects the monthly sync endpoint  |
 
 ---
@@ -593,13 +569,11 @@ The cron endpoint calls the same logic as `seed-details.ts` but as a Route Handl
 - [ ] Add `NPS_API_KEY` env var
 - [ ] Add `CRON_SECRET` env var
 - [ ] Optionally add `WEATHER_API_KEY` for live weather
-- [ ] Optionally add `NEXT_PUBLIC_STADIA_API_KEY` for Outdoors basemap
 - [ ] Run seed scripts locally before first deploy (`pnpm seed`)
 - [ ] Verify map loads with OpenFreeMap tiles
 - [ ] Verify popup loads park details with carousel
 - [ ] Verify search and type filtering work
 - [ ] Verify weather section loads (if key is set)
-- [ ] Verify Stadia Outdoors toggle (if key is set)
 
 ---
 

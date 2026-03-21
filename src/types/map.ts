@@ -13,11 +13,9 @@ export interface BBox {
   north: number;
 }
 
-export type MapStyleKey = "liberty" | "outdoors";
+export type MapStyleKey = "liberty";
 
 export interface MapStyleConfig {
   name: string;
   url: string;
-  requiresApiKey: boolean;
-  apiKeyEnvVar?: string;
 }

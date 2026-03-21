@@ -1,42 +1,12 @@
-import type { MapStyleConfig, MapStyleKey, ViewState } from "@/types/map";
+import type { ViewState } from "@/types/map";
 
-export const MAP_STYLES: Record<MapStyleKey, MapStyleConfig> = {
-  liberty: {
-    name: "Standard",
-    url: "https://tiles.openfreemap.org/styles/liberty",
-    requiresApiKey: false,
-  },
-  outdoors: {
-    name: "Outdoors",
-    url: "https://tiles.stadiamaps.com/styles/outdoors.json",
-    requiresApiKey: true,
-    apiKeyEnvVar: "NEXT_PUBLIC_STADIA_API_KEY",
-  },
-};
-
-export const DEFAULT_STYLE: MapStyleKey = "liberty";
+export const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
 export const INITIAL_VIEW_STATE: ViewState = {
   longitude: -98.5,
   latitude: 39.8,
   zoom: 4,
 };
-
-/**
- * Returns the full style URL for a given style key.
- * For Stadia Outdoors, appends the API key if available.
- */
-export function getStyleUrl(styleKey: MapStyleKey): string | null {
-  const style = MAP_STYLES[styleKey];
-
-  if (style.requiresApiKey) {
-    const apiKey = process.env.NEXT_PUBLIC_STADIA_API_KEY;
-    if (!apiKey) return null;
-    return `${style.url}?api_key=${apiKey}`;
-  }
-
-  return style.url;
-}
 
 /**
  * Returns the simplification tolerance for a given zoom level.
