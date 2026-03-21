@@ -38,24 +38,28 @@ body {
 }
 
 .maplibregl-popup-close-button {
-  font-size: 1.25rem;
-  padding: 4px 8px;
-  color: #6b7280;
-  z-index: 10;
-  background: white;
-  border-radius: 9999px;
-  margin: 6px;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  padding: 0 !important;
+  color: #1f2937 !important;
+  z-index: 10 !important;
+  background: #e5e7eb !important;
+  border-radius: 9999px !important;
+  margin: 8px !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: none !important;
+  border: none !important;
+  transition: background 0.15s, color 0.15s !important;
+  line-height: 1 !important;
 }
 
 .maplibregl-popup-close-button:hover {
-  color: #111827;
-  background: #f3f4f6;
+  color: #fff !important;
+  background: #4b5563 !important;
 }
 
 /* Slim scrollbar for the park detail popup body */
