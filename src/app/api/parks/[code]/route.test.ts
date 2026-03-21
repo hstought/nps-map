@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockParkDetail } from "@/test/fixtures";
 
@@ -10,8 +11,8 @@ import { GET } from "@/app/api/parks/[code]/route";
 
 const mockGetParkDetail = vi.mocked(getParkDetail);
 
-function createRequest(): Request {
-  return new Request("http://localhost:3000/api/parks/YELL");
+function createRequest(): NextRequest {
+  return new NextRequest("http://localhost:3000/api/parks/YELL");
 }
 
 describe("GET /api/parks/[code]", () => {

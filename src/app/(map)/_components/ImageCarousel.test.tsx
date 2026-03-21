@@ -7,8 +7,9 @@ import type { ParkImage } from "@/types/park";
 // Mock next/image to render a standard img tag
 vi.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => {
-    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+  default: (props: React.ComponentProps<"img">) => {
+    // biome-ignore lint/performance/noImgElement: test mock for next/image
+    // biome-ignore lint/a11y/useAltText: alt is passed via spread props
     return <img {...props} />;
   },
 }));
