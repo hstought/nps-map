@@ -72,26 +72,49 @@ export function OperatingHoursSection({
           )}
 
           {/* Day-by-day hours */}
-          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-            {DAY_ORDER.map((day) => {
-              const hours = primaryHours.standardHours?.[day];
-              if (!hours) return null;
-              const formatted = formatHours(hours);
-              const isClosed = formatted === "Closed";
+          {(() => {
+            const formattedHours = DAY_ORDER.map((day) => ({
+              day,
+              hours: formatHours(primaryHours.standardHours?.[day] ?? ""),
+            }));
+            const allSame = formattedHours.every(
+              (d) => d.hours === formattedHours[0].hours
+            );
+
+            if (allSame && formattedHours[0].hours) {
               return (
-                <div key={day} className="contents">
+                <div className="flex items-baseline justify-between gap-2">
                   <span className="text-[11px] font-medium text-gray-500">
-                    {DAY_LABELS[day]}
+                    Mon–Sun
                   </span>
-                  <span
-                    className={`text-[11px] ${isClosed ? "text-red-500" : "text-gray-700"}`}
-                  >
-                    {formatted}
+                  <span className="text-[11px] text-gray-700">
+                    {formattedHours[0].hours}
                   </span>
                 </div>
               );
-            })}
-          </div>
+            }
+
+            return (
+              <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+                {formattedHours.map(({ day, hours }) => {
+                  if (!hours) return null;
+                  const isClosed = hours === "Closed";
+                  return (
+                    <div key={day} className="contents">
+                      <span className="text-[11px] font-medium text-gray-500">
+                        {DAY_LABELS[day]}
+                      </span>
+                      <span
+                        className={`text-[11px] ${isClosed ? "text-red-500" : "text-gray-700"}`}
+                      >
+                        {hours}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Exceptions (deduplicated by name + dates) */}
           {primaryHours.exceptions?.length > 0 &&
