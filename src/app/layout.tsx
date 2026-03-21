@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NPS Map — Explore National Park Boundaries",
+  title: "National Park Maps — Explore National Park Boundaries",
   description:
     "Interactive map of all National Park Service units. Explore boundaries, view park photos, and learn about America's public lands.",
 };

@@ -1,8 +1,8 @@
-# NPS Map — Architecture Document
+# National Park Maps — Architecture Document
 
 > **Status:** Implemented  
-> **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · MapLibre GL JS · Neon (PostGIS) · Vercel  
-> **Last Updated:** 2026-03-20
+> **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · MapLibre GL JS · Neon (PostGIS) · Vitest · Biome · Vercel  
+> **Last Updated:** 2026-03-21
 
 ---
 
@@ -558,10 +558,69 @@ The cron endpoint calls the same logic as `seed-details.ts` but as a Route Handl
 | `embla-carousel-react`     | Image carousel for park popup        |
 | `lucide-react`             | Icon library                         |
 | `@vercel/analytics`        | Vercel Web Analytics                 |
+| `vitest` 4                 | Unit test framework                  |
+| `@testing-library/react`   | Component testing utilities          |
+| `@testing-library/user-event` | User interaction simulation       |
+| `@biomejs/biome`           | Linting and formatting               |
+| `jsdom`                    | DOM environment for tests            |
 
 ---
 
-## 12. Deployment Checklist (Vercel)
+## 12. Testing
+
+### 12.1 Framework
+
+- **Test runner:** Vitest 4 with jsdom environment
+- **Component testing:** @testing-library/react + @testing-library/user-event
+- **Assertions:** jest-dom matchers (via `src/test/setup.ts`)
+- **Coverage:** All source files except layout.tsx, globals.css, and test utilities
+
+### 12.2 Test Organization
+
+Every source file has a colocated `.test.ts` or `.test.tsx` file:
+
+| Category | Test Files | Description |
+|---|---|---|
+| Components | 8 | ParkSearch, ParkTypeFilter, MapContainer, ParkDetailPopup, ImageCarousel, CurrentWeatherSection, EntranceFeesSection, OperatingHoursSection |
+| API Routes | 5 | parks, parks/[code], parks/[code]/weather, parks/search, cron/sync-parks |
+| Data Layer | 3 | parks, weather, nps-api |
+| Config/Constants | 3 | map config, national-parks, db |
+| Error Boundary | 1 | error.tsx |
+
+### 12.3 Test Fixtures
+
+`src/test/fixtures.ts` provides factory functions for creating mock data:
+
+- `createMockParkDetail(overrides?)` — Full park detail with sensible defaults
+- `createMockImage(overrides?)` — Park image with URL, credit, alt text
+- `createMockEntranceFee(overrides?)` — Entrance fee with cost and description
+- `createMockOperatingHours(overrides?)` — Operating hours with standard hours and exceptions
+- `createMockCurrentWeather(overrides?)` — Weather data with temperature, wind, humidity
+- `createMockSearchResult(overrides?)` — Search result with code, name, coordinates
+- `createMockBoundaryFeature(overrides?)` — GeoJSON boundary feature
+
+### 12.4 Running Tests
+
+```bash
+pnpm test              # Single run
+pnpm test:watch        # Watch mode
+pnpm test:coverage     # With coverage report
+```
+
+---
+
+## 13. Linting & Formatting
+
+- **Tool:** [Biome](https://biomejs.dev) (replaces ESLint + Prettier)
+- **Config:** `biome.json` at project root
+- **Commands:**
+  - `pnpm lint` — Check for lint errors
+  - `pnpm lint:fix` — Auto-fix lint errors
+  - `pnpm format` — Format all files
+
+---
+
+## 14. Deployment Checklist (Vercel)
 
 - [ ] Push to GitHub repository
 - [ ] Connect repo to Vercel
@@ -577,7 +636,7 @@ The cron endpoint calls the same logic as `seed-details.ts` but as a Route Handl
 
 ---
 
-## 13. Future Enhancements
+## 15. Future Enhancements
 
 - **Vector tiles via Martin** — Serve boundaries directly from PostGIS as MVT tiles for automatic viewport-based loading (eliminates `/api/parks` route)
 - **State / activity filtering** — Filter parks by state or activity in addition to type

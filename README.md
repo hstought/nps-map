@@ -1,4 +1,4 @@
-# NPS Map
+# National Park Maps
 
 An interactive web map displaying the boundaries of all ~435 National Park Service (NPS) units across the United States. Users can pan, zoom, search, filter by type, and click on any park to view details, photos, live weather, entrance fees, and operating hours.
 
@@ -6,11 +6,12 @@ An interactive web map displaying the boundaries of all ~435 National Park Servi
 
 ## Features
 
-- **Interactive map** — Pan, zoom, and click park boundaries rendered with MapLibre GL JS
-- **Park detail popup** — Image carousel, description, live weather, operating hours, entrance fees
-- **Park search** — Debounced search with keyboard navigation and fly-to selection
-- **Type filtering** — Filter ~435 NPS units across 9 categories (National Parks, Monuments, Historic Sites, etc.)
+- **Interactive map** — Pan, zoom, and click park boundaries rendered with MapLibre GL JS, color-coded by unit type
+- **Park detail popup** — Image carousel, description, live weather, operating hours, entrance fees, and NPS.gov link
+- **Park search** — Debounced autocomplete search with full keyboard navigation (Arrow keys, Enter, Escape) and fly-to selection
+- **Type filtering** — Filter ~435 NPS units across 9 color-coded categories (National Parks, Monuments, Historic Sites, etc.)
 - **Automatic data sync** — Monthly Vercel Cron job refreshes cached park metadata from the NPS API
+- **Comprehensive test suite** — Unit tests for all components, API routes, and data layer functions using Vitest + Testing Library
 
 ## Tech Stack
 
@@ -20,6 +21,8 @@ An interactive web map displaying the boundaries of all ~435 National Park Servi
 - [Tailwind CSS](https://tailwindcss.com) v4
 - [MapLibre GL JS](https://maplibre.org) via react-map-gl
 - [Neon](https://neon.tech) (PostgreSQL + PostGIS)
+- [Biome](https://biomejs.dev) for linting and formatting
+- [Vitest](https://vitest.dev) + [Testing Library](https://testing-library.com) for testing
 - [Vercel](https://vercel.com) for hosting
 
 ## Getting Started
@@ -103,11 +106,15 @@ src/
 ├── types/                        # Shared TypeScript types
 │   ├── park.ts                   # Park, weather, and search types
 │   └── map.ts                    # Map viewport and style types
+├── test/                         # Test utilities and fixtures
+│   ├── fixtures.ts               # Mock data factories
+│   └── setup.ts                  # Vitest setup (jest-dom matchers)
 scripts/                          # Database seed scripts
 ├── seed-boundaries.ts            # Load GeoJSON into PostGIS
 └── seed-details.ts               # Cache NPS API metadata
 docs/                             # Project documentation
-└── architecture.md               # Full architecture reference
+├── architecture.md               # Full architecture reference
+└── national-parks-comparison.md  # Park data comparison notes
 ```
 
 ### Data Flow
@@ -116,6 +123,18 @@ docs/                             # Project documentation
 2. **API Routes** — Query PostGIS for boundaries (`/api/parks`), details (`/api/parks/[code]`), search (`/api/parks/search`), and weather (`/api/parks/[code]/weather`)
 3. **Data Layer** (`lib/data/`) — Typed data access functions for all database and external API calls
 4. **Components** — Consume data via API fetch calls, never query the database directly
+
+## Testing
+
+The project uses [Vitest](https://vitest.dev) with [Testing Library](https://testing-library.com) for comprehensive unit testing. Every component, API route, and data layer function has a colocated test file.
+
+```bash
+pnpm test              # Single run
+pnpm test:watch        # Watch mode
+pnpm test:coverage     # With coverage report
+```
+
+Test fixtures are provided in `src/test/fixtures.ts` with factory functions for creating mock park details, images, entrance fees, operating hours, weather data, and more.
 
 ## Documentation
 
@@ -128,5 +147,10 @@ See [docs/architecture.md](docs/architecture.md) for the full architecture refer
 | `pnpm dev` | Start the development server |
 | `pnpm build` | Create a production build |
 | `pnpm start` | Start the production server |
-| `pnpm lint` | Run ESLint |
+| `pnpm lint` | Run Biome linter |
+| `pnpm lint:fix` | Run Biome linter with auto-fix |
+| `pnpm format` | Format code with Biome |
+| `pnpm test` | Run tests (single run) |
+| `pnpm test:watch` | Run tests in watch mode |
+| `pnpm test:coverage` | Run tests with coverage |
 | `pnpm seed` | Seed park boundaries and details |
