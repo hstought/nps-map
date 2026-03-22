@@ -58,7 +58,7 @@ An interactive web map displaying the boundaries of all ~435 National Park Servi
 
 ### 3.1 `park_boundaries`
 
-Stores the polygon/multipolygon geometries from `nps_boundary.geojson`.
+Stores the polygon/multipolygon geometries from `nps_boundary.geojson`. [LINK](https://geodata.bts.gov/datasets/national-parks/)
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgis;
