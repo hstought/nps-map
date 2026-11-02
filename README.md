@@ -43,18 +43,7 @@ pnpm install
 
 ### Environment Variables
 
-Copy the example env file and fill in your values:
-
-```bash
-cp .env.example .env.local
-```
-
-| Variable                     | Required | Description                                   |
-|------------------------------|----------|-----------------------------------------------|
-| `DATABASE_URL`               | Yes      | Neon PostgreSQL connection string              |
-| `NPS_API_KEY`                | Yes      | [NPS Developer API](https://www.nps.gov/subjects/developer/get-started.htm) key |
-| `WEATHER_API_KEY`            | No       | [WeatherAPI.com](https://www.weatherapi.com/) key for live weather in popups |
-| `CRON_SECRET`                | No       | Protects the `/api/cron/sync-parks` endpoint (required on Vercel) |
+For local development, keep `DATABASE_URL`, `NPS_API_KEY`, and `WEATHER_API_KEY` in the `nps-map` Infisical Development environment. The `dev`, `build`, `start`, and NPS detail seeding scripts load them through `infisical run`; do not create `.env.local` for these values. `CRON_SECRET` is needed when protecting the Vercel cron endpoint; add it to the deployment environment or configure a production Infisical integration before deploying.
 
 ### Seed the Database
 

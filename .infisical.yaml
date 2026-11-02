@@ -1,0 +1,4 @@
+version: 1
+general: {}
+secrets-management:
+    project-id: e52e6c70-45d6-433f-8d62-ad6c9c46de93
