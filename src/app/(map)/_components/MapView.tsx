@@ -3,6 +3,7 @@
 import type {
   ExpressionSpecification,
   FillLayerSpecification,
+  FilterSpecification,
   LineLayerSpecification,
 } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -104,17 +105,36 @@ function snapBbox(
     .join(",");
 }
 
+const EMPTY_COLLECTION: ParkBoundaryCollection = {
+  type: "FeatureCollection",
+  features: [],
+};
+
+/** Layer filter: only features whose unitCode is in `codes`. */
+function codeFilter(codes: string[]): FilterSpecification {
+  return ["in", ["get", "unitCode"], ["literal", codes]];
+}
+
 export function MapView() {
   const mapRef = useRef<MapRef>(null);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const [overview, setOverview] = useState<ParkBoundaryCollection | null>(null);
-  const [detail, setDetail] = useState<ParkBoundaryCollection | null>(null);
+  // Detailed boundaries only ever accumulate and get finer: each park keeps
+  // the highest-zoom geometry fetched so far. Zooming back out or panning
+  // over loaded areas therefore never touches the map source, which is what
+  // keeps zooming smooth.
+  const detailByCodeRef = useRef(
+    new Map<string, { feature: ParkBoundaryFeature; zoom: number }>(),
+  );
+  const fetchedUrlsRef = useRef(new Set<string>());
+  const [detail, setDetail] =
+    useState<ParkBoundaryCollection>(EMPTY_COLLECTION);
   const [selectedPark, setSelectedPark] = useState<{
     unitCode: string;
     longitude: number;
     latitude: number;
   } | null>(null);
-  const hoveredFeatureIdRef = useRef<string | null>(null);
+  const hoveredRef = useRef<{ source: string; id: string } | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [enabledTypes, setEnabledTypes] =
@@ -156,20 +176,39 @@ export function MapView() {
       zoom,
     );
 
-    // Drop any in-flight request so a slow, older response can't overwrite
-    // the current viewport.
+    const url = `/api/parks?bbox=${bbox}&zoom=${zoom}`;
+    if (fetchedUrlsRef.current.has(url)) return; // already have this view
+
+    // Drop any in-flight request; its view is no longer on screen.
     detailAbortRef.current?.abort();
     const controller = new AbortController();
     detailAbortRef.current = controller;
 
     setIsDetailLoading(true);
     try {
-      const response = await fetch(`/api/parks?bbox=${bbox}&zoom=${zoom}`, {
-        signal: controller.signal,
-      });
+      const response = await fetch(url, { signal: controller.signal });
       if (!response.ok) throw new Error("Failed to fetch parks");
       const data: ParkBoundaryCollection = await response.json();
-      if (!controller.signal.aborted) setDetail(data);
+      if (controller.signal.aborted) return;
+      fetchedUrlsRef.current.add(url);
+
+      const byCode = detailByCodeRef.current;
+      let changed = false;
+      for (const feature of data.features) {
+        const code = feature.properties.unitCode;
+        const existing = byCode.get(code);
+        if (!existing || existing.zoom < zoom) {
+          byCode.set(code, { feature, zoom });
+          changed = true;
+        }
+      }
+      // Only touch the map source when something actually got more detailed.
+      if (changed) {
+        setDetail({
+          type: "FeatureCollection",
+          features: Array.from(byCode.values(), (entry) => entry.feature),
+        });
+      }
     } catch (error) {
       if (!controller.signal.aborted) {
         console.error("Error fetching park details:", error);
@@ -240,34 +279,31 @@ export function MapView() {
     [flyToPark],
   );
 
-  const setHovered = useCallback((featureId: string | null) => {
-    const map = mapRef.current?.getMap();
-    if (!map) return;
-    const previous = hoveredFeatureIdRef.current;
-    if (previous === featureId) return;
+  const setHovered = useCallback(
+    (next: { source: string; id: string } | null) => {
+      const map = mapRef.current?.getMap();
+      if (!map) return;
+      const previous = hoveredRef.current;
+      if (previous?.source === next?.source && previous?.id === next?.id) {
+        return;
+      }
 
-    if (previous !== null) {
-      map.setFeatureState(
-        { source: "park-boundaries", id: previous },
-        { hover: false },
-      );
-    }
-    if (featureId !== null) {
-      map.setFeatureState(
-        { source: "park-boundaries", id: featureId },
-        { hover: true },
-      );
-    }
-    hoveredFeatureIdRef.current = featureId;
-    map.getCanvas().style.cursor = featureId !== null ? "pointer" : "";
-  }, []);
+      if (previous) map.setFeatureState(previous, { hover: false });
+      if (next) map.setFeatureState(next, { hover: true });
+      hoveredRef.current = next;
+      map.getCanvas().style.cursor = next ? "pointer" : "";
+    },
+    [],
+  );
 
   // Handle polygon hover (ref-based: no React re-render per mouse move)
   const handleMouseMove = useCallback(
     (event: MapLayerMouseEvent) => {
       const feature = event.features?.[0];
       setHovered(
-        feature && feature.id !== undefined ? String(feature.id) : null,
+        feature && feature.id !== undefined
+          ? { source: feature.source, id: String(feature.id) }
+          : null,
       );
     },
     [setHovered],
@@ -314,29 +350,26 @@ export function MapView() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedPark, closePark]);
 
-  // Overview features, with detailed geometry swapped in where we have it,
-  // filtered by the enabled park types.
-  const mapData = useMemo<ParkBoundaryCollection | null>(() => {
-    if (!overview && !detail) return null;
-
-    const byCode = new Map<string, ParkBoundaryFeature>();
-    for (const f of overview?.features ?? []) {
-      byCode.set(f.properties.unitCode, f);
+  // Park-type filtering and the overview/detail hand-off are done with layer
+  // filters rather than by rebuilding source data, so the GeoJSON is never
+  // re-indexed while the user zooms or toggles filters.
+  const { overviewFilter, detailFilter } = useMemo(() => {
+    const enabled = new Set<string>();
+    for (const f of [...(overview?.features ?? []), ...detail.features]) {
+      const p = f.properties;
+      if (isTypeEnabled(p.unitType, p.unitName, enabledTypes, p.unitCode)) {
+        enabled.add(p.unitCode);
+      }
     }
-    for (const f of detail?.features ?? []) {
-      byCode.set(f.properties.unitCode, f);
-    }
-
+    const detailCodes = new Set(
+      detail.features.map((f) => f.properties.unitCode),
+    );
     return {
-      type: "FeatureCollection",
-      features: Array.from(byCode.values()).filter((f) =>
-        isTypeEnabled(
-          f.properties.unitType,
-          f.properties.unitName,
-          enabledTypes,
-          f.properties.unitCode,
-        ),
+      // Hide the coarse outline wherever a detailed one is available.
+      overviewFilter: codeFilter(
+        Array.from(enabled).filter((code) => !detailCodes.has(code)),
       ),
+      detailFilter: codeFilter(Array.from(enabled)),
     };
   }, [overview, detail, enabledTypes]);
 
@@ -362,23 +395,55 @@ export function MapView() {
         onClick={handleClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        interactiveLayerIds={["park-fill"]}
+        interactiveLayerIds={["park-fill", "park-detail-fill"]}
       >
         <NavigationControl position="bottom-right" />
 
-        {mapData && (
+        {overview && (
           <Source
-            id="park-boundaries"
+            id="park-overview"
             type="geojson"
-            data={mapData}
+            data={overview}
             promoteId="unitCode"
             tolerance={0.375}
             buffer={256}
           >
-            <Layer id="park-fill" type="fill" paint={fillPaint} />
-            <Layer id="park-outline" type="line" paint={outlinePaint} />
+            <Layer
+              id="park-fill"
+              type="fill"
+              paint={fillPaint}
+              filter={overviewFilter}
+            />
+            <Layer
+              id="park-outline"
+              type="line"
+              paint={outlinePaint}
+              filter={overviewFilter}
+            />
           </Source>
         )}
+
+        <Source
+          id="park-detail"
+          type="geojson"
+          data={detail}
+          promoteId="unitCode"
+          tolerance={0.375}
+          buffer={256}
+        >
+          <Layer
+            id="park-detail-fill"
+            type="fill"
+            paint={fillPaint}
+            filter={detailFilter}
+          />
+          <Layer
+            id="park-detail-outline"
+            type="line"
+            paint={outlinePaint}
+            filter={detailFilter}
+          />
+        </Source>
 
         {selectedPark && !isMobile && (
           <Popup

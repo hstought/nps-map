@@ -54,3 +54,7 @@ package-lock.json
 
 # Planning
 TODO.md
+
+# env files written by the Vercel CLI (keep the example tracked)
+.env*
+!.env.example
