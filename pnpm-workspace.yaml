@@ -2,3 +2,7 @@ ignoredBuiltDependencies:
   - esbuild
   - sharp
   - unrs-resolver
+
+# Only install package versions published at least 14 days ago (in minutes),
+# to avoid freshly published compromised releases.
+minimumReleaseAge: 20160

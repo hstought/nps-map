@@ -1,3 +1,5 @@
+import type { MultiPolygon } from "geojson";
+
 // Types for park boundary data (from PostGIS)
 
 export interface ParkBoundaryProperties {
@@ -12,7 +14,7 @@ export interface ParkBoundaryProperties {
 export interface ParkBoundaryFeature {
   type: "Feature";
   properties: ParkBoundaryProperties;
-  geometry: GeoJSON.MultiPolygon;
+  geometry: MultiPolygon;
 }
 
 export interface ParkBoundaryCollection {

@@ -6,6 +6,7 @@ import type {
   FilterSpecification,
   LineLayerSpecification,
 } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MapGL, {
   Layer,
@@ -37,6 +38,18 @@ import {
   isTypeEnabled,
   ParkTypeFilter,
 } from "./ParkTypeFilter";
+
+// MapLibre v6 loads its web worker from a separate file. Bundlers can't
+// discover it on their own, so point MapLibre at the bundler-emitted asset
+// (Next.js emits it as a hashed file in both Turbopack and webpack builds).
+// The same module instance is passed to <MapGL mapLib>, so react-map-gl
+// can't end up with a second, unconfigured copy of maplibre-gl.
+maplibregl.setWorkerUrl(
+  new URL(
+    "maplibre-gl/dist/maplibre-gl-worker.mjs",
+    import.meta.url,
+  ).toString(),
+);
 
 // Build the MapLibre match expression for fill-color based on unit type.
 // Cast justified: the dynamic spread from UNIT_TYPE_COLORS produces string[]
@@ -388,6 +401,7 @@ export function MapView() {
     <div className="relative h-full w-full">
       <MapGL
         ref={mapRef}
+        mapLib={maplibregl}
         initialViewState={INITIAL_VIEW_STATE}
         style={{ width: "100%", height: "100%" }}
         mapStyle={MAP_STYLE_URL}

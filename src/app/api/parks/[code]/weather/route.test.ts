@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockParkDetail, createMockWeather } from "@/test/fixtures";
 
@@ -16,8 +17,8 @@ import { getCurrentWeather } from "@/lib/data/weather";
 const mockGetParkDetail = vi.mocked(getParkDetail);
 const mockGetCurrentWeather = vi.mocked(getCurrentWeather);
 
-function createRequest(): Request {
-  return new Request("http://localhost:3000/api/parks/YELL/weather");
+function createRequest(): NextRequest {
+  return new NextRequest("http://localhost:3000/api/parks/YELL/weather");
 }
 
 describe("GET /api/parks/[code]/weather", () => {
