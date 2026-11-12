@@ -138,4 +138,45 @@ describe("GET /api/parks", () => {
     );
     consoleSpy.mockRestore();
   });
+
+  it("rejects a large bbox at a high zoom level", async () => {
+    const request = createRequest({
+      bbox: "-180,-90,180,90",
+      zoom: "20",
+    });
+
+    const response = await GET(request);
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toContain("too large");
+    expect(mockGetParkBoundaries).not.toHaveBeenCalled();
+  });
+
+  it("allows any bbox at low zoom and clamps it to world bounds", async () => {
+    mockGetParkBoundaries.mockResolvedValue(createMockBoundaryCollection(0));
+
+    const request = createRequest({
+      bbox: "-500,-100,500,100",
+      zoom: "3.4",
+    });
+
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    expect(mockGetParkBoundaries).toHaveBeenCalledWith(
+      { west: -180, south: -90, east: 180, north: 90 },
+      3,
+    );
+  });
+
+  it("returns 400 for a non-finite zoom value", async () => {
+    const request = createRequest({
+      bbox: "-111,44,-110,45",
+      zoom: "Infinity",
+    });
+
+    const response = await GET(request);
+
+    expect(response.status).toBe(400);
+  });
 });

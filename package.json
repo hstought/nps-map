@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "infisical run --env=dev -- next dev",
-    "build": "infisical run --env=dev -- next build",
+    "build": "next build",
     "start": "infisical run --env=dev -- next start",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "seed:boundaries": "tsx scripts/seed-boundaries.ts",
     "seed:details": "infisical run --env=dev -- tsx scripts/seed-details.ts",
-    "seed": "pnpm seed:boundaries && pnpm seed:details"
+    "seed": "pnpm seed:boundaries && pnpm seed:details && pnpm build:overview",
+    "build:overview": "infisical run --env=dev -- tsx scripts/build-overview.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

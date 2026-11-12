@@ -65,14 +65,23 @@ describe("GET /api/cron/sync-parks", () => {
     expect(response.status).toBe(401);
   });
 
-  it("allows access when CRON_SECRET is not set", async () => {
+  it("refuses to run when CRON_SECRET is not set", async () => {
     delete process.env.CRON_SECRET;
-    mockFetchAllParks.mockResolvedValue([]);
-    mockUpsertParkDetails.mockResolvedValue({ synced: 0 });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const response = await GET(createRequest() as any);
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(503);
+    expect(mockFetchAllParks).not.toHaveBeenCalled();
+    expect(mockUpsertParkDetails).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("returns 401 for a header that only shares the secret's prefix", async () => {
+    const response = await GET(createRequest("Bearer test-secretX") as any);
+
+    expect(response.status).toBe(401);
+    expect(mockFetchAllParks).not.toHaveBeenCalled();
   });
 
   it("returns 500 when NPS_API_KEY is not configured", async () => {
@@ -93,7 +102,7 @@ describe("GET /api/cron/sync-parks", () => {
     expect(response.status).toBe(500);
     const body = await response.json();
     expect(body.error).toBe("Sync failed");
-    expect(body.details).toContain("API down");
+    expect(body.details).toBeUndefined();
     consoleSpy.mockRestore();
   });
 

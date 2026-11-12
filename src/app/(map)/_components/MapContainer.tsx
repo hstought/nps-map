@@ -1,6 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { loadOverview } from "@/lib/data/overview-client";
+
+// Start downloading park boundaries before the MapLibre chunk arrives.
+if (typeof window !== "undefined") {
+  loadOverview().catch(() => {
+    // MapView retries and reports the error itself.
+  });
+}
 
 const MapView = dynamic(() => import("./MapView").then((mod) => mod.MapView), {
   ssr: false,

@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ParkDetail } from "@/types/park";
 import { CurrentWeatherSection } from "./CurrentWeatherSection";
@@ -10,19 +11,34 @@ import { OperatingHoursSection } from "./OperatingHoursSection";
 interface ParkDetailPopupProps {
   unitCode: string;
   onClose: () => void;
+  /** "popup" = floating map card (desktop); "sheet" = full-width bottom sheet (mobile). */
+  variant?: "popup" | "sheet";
+}
+
+function CloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Close park details"
+      className="absolute top-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-gray-800 shadow-md ring-1 ring-black/10 transition-colors hover:bg-gray-700 hover:text-white"
+    >
+      <X className="h-5 w-5" strokeWidth={2.5} />
+    </button>
+  );
 }
 
 const DESCRIPTION_TRUNCATE_LENGTH = 180;
 
-export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
+export function ParkDetailPopup({
+  unitCode,
+  onClose,
+  variant = "popup",
+}: ParkDetailPopupProps) {
   const [detail, setDetail] = useState<ParkDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
-  useEffect(() => {
-    setIsDescriptionExpanded(false);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,10 +66,16 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
     };
   }, [unitCode]);
 
+  const isSheet = variant === "sheet";
+  const stateWidth = isSheet ? "w-full" : "w-72";
+
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex w-72 flex-col items-center justify-center gap-3 p-6">
+      <div
+        className={`relative flex ${stateWidth} flex-col items-center justify-center gap-3 p-6`}
+      >
+        <CloseButton onClick={onClose} />
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-green-700" />
         <p className="text-sm text-gray-500">Loading park info…</p>
       </div>
@@ -63,7 +85,10 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
   // Error state
   if (error || !detail) {
     return (
-      <div className="flex w-72 flex-col items-center justify-center gap-2 p-6">
+      <div
+        className={`relative flex ${stateWidth} flex-col items-center justify-center gap-2 p-6`}
+      >
+        <CloseButton onClick={onClose} />
         <p className="text-sm text-red-600">{error || "Park not found"}</p>
         <button
           type="button"
@@ -97,13 +122,21 @@ export function ParkDetailPopup({ unitCode, onClose }: ParkDetailPopupProps) {
   const formattedStates = stateAbbreviations.join(", ");
 
   return (
-    <div className="flex w-96 flex-col overflow-hidden">
+    <div
+      className={`relative flex flex-col overflow-hidden ${isSheet ? "w-full" : "w-96"}`}
+    >
+      <CloseButton onClick={onClose} />
+
       {/* Image carousel */}
       <ImageCarousel images={detail.images} parkName={detail.fullName} />
 
       {/* Scrollable content body */}
       <div
-        className="popup-scroll-body flex max-h-[55vh] flex-col gap-2.5 overflow-y-auto p-4"
+        className={`popup-scroll-body flex flex-col gap-2.5 overflow-y-auto p-4 ${
+          isSheet
+            ? "max-h-[calc(70dvh-11rem)] overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))]"
+            : "max-h-[min(55vh,calc(100dvh-18rem))]"
+        }`}
         onWheel={(e) => e.stopPropagation()}
       >
         {/* Park name */}

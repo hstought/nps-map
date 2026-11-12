@@ -201,4 +201,44 @@ describe("ParkDetailPopup", () => {
       expect(mockFetch).toHaveBeenCalledWith("/api/parks/GRCA");
     });
   });
+
+  it("always shows a close button, even while loading", async () => {
+    mockFetch.mockReturnValue(new Promise(() => {})); // never resolves
+
+    render(<ParkDetailPopup unitCode="YELL" onClose={onClose} />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Close park details" }),
+    );
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("shows a close button once details have loaded", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockParkDetail()),
+    });
+
+    render(<ParkDetailPopup unitCode="YELL" onClose={onClose} />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Close park details" }),
+    );
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("uses full width in the mobile sheet variant", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockParkDetail()),
+    });
+
+    const { container } = render(
+      <ParkDetailPopup unitCode="YELL" onClose={onClose} variant="sheet" />,
+    );
+
+    await screen.findByRole("button", { name: "Close park details" });
+    expect(container.firstElementChild).toHaveClass("w-full");
+    expect(container.firstElementChild).not.toHaveClass("w-96");
+  });
 });

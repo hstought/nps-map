@@ -31,6 +31,9 @@ export function isMemoryError(error: unknown): boolean {
 /** Maximum number of park boundaries returned per request. */
 const BOUNDARY_LIMIT = 250;
 
+/** Decimal places in returned coordinates (5 ≈ 1 m — plenty for display). */
+const COORD_DECIMALS = 5;
+
 /**
  * Run the boundary query with a given simplification function.
  * Extracted so we can retry with a lighter algorithm on failure.
@@ -46,7 +49,7 @@ async function queryBoundaries(
     return sql`
       SELECT
         unit_code, unit_name, park_name, unit_type, state, region,
-        ST_AsGeoJSON(ST_SimplifyPreserveTopology(boundary, ${tolerance})) AS geojson
+        ST_AsGeoJSON(ST_SimplifyPreserveTopology(boundary, ${tolerance}), ${COORD_DECIMALS}) AS geojson
       FROM park_boundaries
       WHERE ST_Intersects(
         boundary,
@@ -59,7 +62,7 @@ async function queryBoundaries(
   return sql`
     SELECT
       unit_code, unit_name, park_name, unit_type, state, region,
-      ST_AsGeoJSON(ST_Simplify(boundary, ${tolerance}, true)) AS geojson
+      ST_AsGeoJSON(ST_Simplify(boundary, ${tolerance}, true), ${COORD_DECIMALS}) AS geojson
     FROM park_boundaries
     WHERE ST_Intersects(
       boundary,

@@ -43,7 +43,16 @@ pnpm install
 
 ### Environment Variables
 
-For local development, keep `DATABASE_URL`, `NPS_API_KEY`, and `WEATHER_API_KEY` in the `nps-map` Infisical Development environment. The `dev`, `build`, `start`, and NPS detail seeding scripts load them through `infisical run`; do not create `.env.local` for these values. `CRON_SECRET` is needed when protecting the Vercel cron endpoint; add it to the deployment environment or configure a production Infisical integration before deploying.
+For local development, keep `DATABASE_URL`, `NPS_API_KEY`, and `WEATHER_API_KEY` in the `nps-map` Infisical Development environment. The `dev`, `start`, `seed:details`, and `build:overview` scripts load them through `infisical run`; do not create `.env.local` for these values.
+
+`pnpm build` is a plain `next build` with no Infisical dependency, because Vercel runs it on machines without the Infisical CLI and the build needs no secrets. In production, the app reads its variables from the Vercel project's environment (set them in the Vercel dashboard or via the Infisical → Vercel integration):
+
+| Variable          | Required | Purpose                                                                 |
+|-------------------|----------|-------------------------------------------------------------------------|
+| `DATABASE_URL`    | Yes      | Neon PostgreSQL connection string                                       |
+| `NPS_API_KEY`     | Yes      | NPS Developer API key (monthly sync)                                    |
+| `WEATHER_API_KEY` | No       | Live weather in park popups                                             |
+| `CRON_SECRET`     | Yes      | Authorizes `/api/cron/sync-parks`. If unset, the endpoint refuses to run |
 
 ### Seed the Database
 
@@ -53,7 +62,7 @@ Load park boundaries and details into your Neon database:
 pnpm seed
 ```
 
-This runs two scripts in sequence: `seed:boundaries` (loads GeoJSON boundary data into PostGIS) and `seed:details` (fetches and caches park metadata from the NPS API).
+This runs three scripts in sequence: `seed:boundaries` (loads GeoJSON boundary data into PostGIS), `seed:details` (fetches and caches park metadata from the NPS API), and `build:overview` (writes `public/data/parks-overview.geojson`, a pre-simplified file of every park boundary that the map shows on first load and at zoom levels below 8). Commit the regenerated overview file whenever boundaries change.
 
 ### Run the Dev Server
 
